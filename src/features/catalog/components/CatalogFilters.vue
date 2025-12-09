@@ -165,9 +165,10 @@ const activeFiltersList = computed(() => {
   // Категории
   if (selectedCategories.value.length > 0) {
     if (selectedCategories.value.length === 1) {
+      const firstCategory = selectedCategories.value[0] || ''
       filters.push({ 
         key: 'category', 
-        label: `Категория: ${getCategoryName(selectedCategories.value[0])}` 
+        label: `Категория: ${getCategoryName(firstCategory || 'other')}` 
       })
     } else {
       filters.push({ 
@@ -349,8 +350,7 @@ watch(() => props.filters, (newFilters) => {
 
 .category-selected {
   border-color: var(--primary-color);
-  background: var(--primary-color-light);
-  opacity: 0.1;
+  background: color-mix(in srgb, var(--primary-color) 15%, transparent);
 }
 
 .category-checkbox {
@@ -427,9 +427,8 @@ watch(() => props.filters, (newFilters) => {
 
 .sort-btn-active {
   border-color: var(--primary-color);
-  background: var(--primary-color-light);
-  opacity: 0.1;
-  color: var(--text-primary);
+  background: color-mix(in srgb, var(--primary-color) 14%, var(--background-secondary));
+  color: var(--primary-color);
   font-weight: 500;
 }
 
@@ -463,8 +462,8 @@ watch(() => props.filters, (newFilters) => {
   align-items: center;
   gap: 0.25rem;
   padding: 0.375rem 0.75rem;
-  background: var(--primary-color-light);
-  opacity: 0.1;
+  background: color-mix(in srgb, var(--primary-color) 12%, var(--background-secondary));
+  border: 1px solid color-mix(in srgb, var(--primary-color) 35%, transparent);
   border-radius: var(--border-radius-md);
   font-size: 0.75rem;
   color: var(--text-primary);
@@ -473,8 +472,8 @@ watch(() => props.filters, (newFilters) => {
 }
 
 .active-filter:hover {
-  background: var(--primary-color-light);
-  opacity: 0.2;
+  background: color-mix(in srgb, var(--primary-color) 18%, var(--background-secondary));
+  border-color: var(--primary-color);
 }
 
 .remove-filter {

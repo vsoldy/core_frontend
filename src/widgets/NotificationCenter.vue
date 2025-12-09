@@ -34,11 +34,12 @@ const removeNotification = (id: string) => {
 <style scoped>
 .notifications-container {
   position: fixed;
-  top: 1rem;
+  top: calc(var(--header-offset) + 0.5rem);
   right: 1rem;
   z-index: 1000;
   max-width: 400px;
   width: 100%;
+  pointer-events: none;
 }
 
 .notification {
@@ -54,6 +55,7 @@ const removeNotification = (id: string) => {
   cursor: pointer;
   transition: transform var(--transition-fast);
   animation: slideIn 0.3s ease;
+  pointer-events: auto;
 }
 
 .notification:hover {

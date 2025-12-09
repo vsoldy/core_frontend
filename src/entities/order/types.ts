@@ -8,7 +8,7 @@ export interface Order {
   status: OrderStatus
   price: number
   quantity: number
-  customFieldsData: Record<string, any>
+  customFieldsData: Record<string, unknown>
   createdAt: string
   updatedAt?: string
   completedAt?: string

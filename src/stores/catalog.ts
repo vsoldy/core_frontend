@@ -10,7 +10,7 @@ const CATEGORIES: string[] = ['electronics', 'clothing', 'books', 'other']
 // Хелпер функция для получения случайной категории
 const getRandomCategory = (): string => {
   const index = Math.floor(Math.random() * CATEGORIES.length)
-  return CATEGORIES[index]
+  return CATEGORIES[index] || 'other'
 }
 
 // Mock API функция (позже заменим на реальный API)
@@ -74,7 +74,8 @@ const mockApi = {
     // Сортировка
     if (params.sortBy) {
       filtered.sort((a, b) => {
-        let aValue: any, bValue: any
+        let aValue: number
+        let bValue: number
         
         switch (params.sortBy) {
           case 'price':
@@ -127,6 +128,7 @@ export const useCatalogStore = defineStore('catalog', () => {
   const services = ref<Service[]>([])
   const isLoading = ref(false)
   const filters = ref<CatalogFilter>({})
+  const currentCatalogType = ref<'buyer-service' | 'user-request'>('buyer-service')
   const pagination = ref<Pagination>({
     page: 1,
     limit: 12,
@@ -142,15 +144,24 @@ export const useCatalogStore = defineStore('catalog', () => {
   const filteredServices = computed(() => services.value)
   const categories = computed(() => cachedCategories.value)
   const priceRange = computed(() => cachedPriceRange.value)
-  
   const paginatedServices = computed(() => services.value)
+  const hasMore = computed(() => services.value.length < pagination.value.total)
 
   // Действия
-  const loadServices = async (catalogType: 'buyer-service' | 'user-request' = 'buyer-service') => {
+  const loadServices = async (
+    catalogType: 'buyer-service' | 'user-request' = currentCatalogType.value,
+    options?: { append?: boolean }
+  ) => {
     isLoading.value = true
+    const append = options?.append ?? false
+    const nextPage = append ? pagination.value.page + 1 : 1
+    if (!append) {
+      services.value = []
+    }
+    currentCatalogType.value = catalogType
     try {
       const params: CatalogQueryParams = {
-        page: pagination.value.page,
+        page: nextPage,
         limit: pagination.value.limit,
         catalogType: catalogType === 'buyer-service' ? 'services' : 'requests',
         ...filters.value
@@ -158,7 +169,7 @@ export const useCatalogStore = defineStore('catalog', () => {
       
       const response = await mockApi.getServices(params)
       
-      services.value = response.items
+      services.value = append ? [...services.value, ...response.items] : response.items
       pagination.value = {
         page: response.page,
         limit: response.limit,
@@ -261,6 +272,7 @@ export const useCatalogStore = defineStore('catalog', () => {
     isLoading,
     filters,
     pagination,
+    hasMore,
     
     // Геттеры
     filteredServices,
@@ -272,6 +284,11 @@ export const useCatalogStore = defineStore('catalog', () => {
     setFilters,
     resetFilters,
     setPage,
+    setCatalogType: (type: 'buyer-service' | 'user-request') => {
+      currentCatalogType.value = type
+      pagination.value.page = 1
+      services.value = []
+    },
     loadServices,
     loadCategories,
     loadPriceRange

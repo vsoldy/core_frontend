@@ -19,5 +19,5 @@ export interface CustomField {
   type: 'text' | 'number' | 'select' | 'checkbox'
   required: boolean
   options?: string[]
-  value?: any
+  value?: unknown
 }

@@ -130,7 +130,8 @@ const handleSubmit = async () => {
         duration: 3000
       })
     }
-  } catch (error) {
+  } catch (error: unknown) {
+    console.error('Login error:', error)
     uiStore.addNotification({
       type: 'error',
       title: 'Ошибка',

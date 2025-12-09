@@ -384,12 +384,53 @@ const handleSubmit = async () => {
       })
     }
     
-  } catch (error) {
+  } catch (error: unknown) {
+    console.error('Register error:', error)
     uiStore.addNotification({
       type: 'error',
       title: 'Ошибка регистрации',
       message: 'Произошла ошибка при регистрации. Попробуйте еще раз.',
       duration: 3000
+    })
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const registerWithGoogle = async () => {
+  isLoading.value = true
+  try {
+    // TODO: заменить на реальную интеграцию Google OAuth
+    const result = await authStore.register({
+      name: form.name.trim() || 'Google User',
+      email: form.email.trim() || 'google@example.com',
+      password: form.password || crypto.randomUUID(),
+      phone: form.phone.trim() || undefined,
+      role: form.role
+    })
+
+    if (result.success) {
+      uiStore.addNotification({
+        type: 'success',
+        title: 'Регистрация',
+        message: 'Вы успешно зарегистрировались через Google',
+        duration: 4000
+      })
+      const redirect = (route.query.redirect as string) || '/'
+      router.push(redirect)
+    } else {
+      uiStore.addNotification({
+        type: 'error',
+        title: 'Ошибка',
+        message: result.error || 'Не удалось зарегистрироваться через Google'
+      })
+    }
+  } catch (error) {
+    console.error('Google register error:', error)
+    uiStore.addNotification({
+      type: 'error',
+      title: 'Ошибка',
+      message: 'Не удалось выполнить регистрацию через Google'
     })
   } finally {
     isLoading.value = false
@@ -537,8 +578,7 @@ const showTerms = () => {
 
 .role-selected {
   border-color: var(--primary-color);
-  background: var(--primary-color-light);
-  opacity: 0.1;
+  background: color-mix(in srgb, var(--primary-color) 15%, transparent);
 }
 
 .role-input {
@@ -729,8 +769,7 @@ const showTerms = () => {
 }
 
 .info-note {
-  background: var(--primary-color-light);
-  opacity: 0.1;
+  background: color-mix(in srgb, var(--primary-color) 12%, var(--background-secondary));
   border-left: 4px solid var(--primary-color);
   padding: 1rem;
   border-radius: var(--border-radius-sm);

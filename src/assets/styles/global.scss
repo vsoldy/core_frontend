@@ -14,12 +14,14 @@ body {
   background-color: var(--background-primary);
   color: var(--text-primary);
   transition: background-color var(--transition-normal), color var(--transition-normal);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
 }
 
 .container {
-  max-width: 1200px;
+  max-width: var(--content-max);
   margin: 0 auto;
-  padding: 0 1rem;
+  padding: 0 var(--gutter);
 }
 
 .page-wrapper {
@@ -67,6 +69,12 @@ body {
   background-color: var(--background-tertiary);
 }
 
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
 /* Стили для кнопок */
 .btn {
   display: inline-block;
@@ -100,4 +108,14 @@ body {
   border-radius: var(--border-radius-lg);
   padding: 1.5rem;
   box-shadow: var(--shadow-md);
+}
+
+@media (max-width: 768px) {
+  body {
+    font-size: 15px;
+  }
+  
+  .page-content {
+    padding: 1.25rem 0;
+  }
 }

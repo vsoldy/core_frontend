@@ -1,25 +1,23 @@
-import { computed } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useAuthStore } from '@/stores/auth'
 
 export const useAuth = () => {
   const authStore = useAuthStore()
+  const { user, token, isAuthenticated, isLoading, isUser, isBuyer, isManager, isAdmin } = storeToRefs(authStore)
 
   return {
-    // Данные пользователя
-    user: computed(() => authStore.user),
-    token: computed(() => authStore.token),
-    isAuthenticated: computed(() => authStore.isAuthenticated),
-    isLoading: computed(() => authStore.isLoading),
-
-    // Проверка ролей
-    isUser: computed(() => authStore.isUser),
-    isBuyer: computed(() => authStore.isBuyer),
-    isManager: computed(() => authStore.isManager),
-    isAdmin: computed(() => authStore.isAdmin),
-
-    // Методы
+    user,
+    token,
+    isAuthenticated,
+    isLoading,
+    isUser,
+    isBuyer,
+    isManager,
+    isAdmin,
     login: authStore.login,
     logout: authStore.logout,
-    checkAuth: authStore.checkAuth
+    checkAuth: authStore.checkAuth,
+    changeRole: authStore.changeRole,
+    register: authStore.register
   }
 }

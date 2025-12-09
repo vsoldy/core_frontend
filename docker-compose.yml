@@ -1,0 +1,8 @@
+version: "3.9"
+
+services:
+  soldy-frontend:
+    build: .
+    ports:
+      - "8080:80"
+    restart: unless-stopped

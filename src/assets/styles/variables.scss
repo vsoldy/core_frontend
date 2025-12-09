@@ -4,6 +4,7 @@
   --primary-color: #0ea5e9;
   --primary-color-light: #7dd3fc;
   --primary-color-dark: #0369a1;
+  --primary-color-rgb: 14, 165, 233;
   
   // Акцентные цвета (10%)
   --accent-red: #ef4444;
@@ -50,6 +51,17 @@
   --transition-fast: 150ms;
   --transition-normal: 250ms;
   --transition-slow: 350ms;
+  --content-max: 1200px;
+  --gutter: 1rem;
+  --radius-pill: 999px;
+  --header-height: 64px;
+  --header-height-mobile: 60px;
+  --header-offset: var(--header-height);
+  
+  // Breakpoints
+  --bp-mobile: 640px;
+  --bp-tablet: 900px;
+  --bp-desktop: 1200px;
 }
 
 // Темная тема

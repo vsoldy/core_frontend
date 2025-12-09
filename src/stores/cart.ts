@@ -5,7 +5,7 @@ import type { Service } from '@/entities/service/types'
 export interface CartItem {
   service: Service
   quantity: number
-  selectedOptions?: Record<string, any>
+  selectedOptions?: Record<string, unknown>
 }
 
 export const useCartStore = defineStore('cart', () => {
@@ -26,7 +26,7 @@ export const useCartStore = defineStore('cart', () => {
   const isEmpty = computed(() => items.value.length === 0)
 
   // Действия
-  const addToCart = (service: Service, quantity: number = 1, options?: Record<string, any>) => {
+  const addToCart = (service: Service, quantity: number = 1, options?: Record<string, unknown>) => {
     const existingItem = items.value.find(item => 
       item.service.id === service.id && 
       JSON.stringify(item.selectedOptions) === JSON.stringify(options)
@@ -43,14 +43,14 @@ export const useCartStore = defineStore('cart', () => {
     }
   }
 
-  const removeFromCart = (serviceId: string, options?: Record<string, any>) => {
+  const removeFromCart = (serviceId: string, options?: Record<string, unknown>) => {
     items.value = items.value.filter(item => 
       !(item.service.id === serviceId && 
         JSON.stringify(item.selectedOptions) === JSON.stringify(options))
     )
   }
 
-  const updateQuantity = (serviceId: string, quantity: number, options?: Record<string, any>) => {
+  const updateQuantity = (serviceId: string, quantity: number, options?: Record<string, unknown>) => {
     const item = items.value.find(item => 
       item.service.id === serviceId && 
       JSON.stringify(item.selectedOptions) === JSON.stringify(options)

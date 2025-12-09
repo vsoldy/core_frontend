@@ -1,6 +1,8 @@
-import { apiClient } from '@/core/api/client'
-import type { ApiResponse, PaginatedResponse, CatalogQueryParams } from '@/core/api/types'
+import type { PaginatedResponse, CatalogQueryParams } from '@/core/api/types'
 import type { Service } from '@/entities/service/types'
+
+const CATEGORIES = ['electronics', 'clothing', 'books', 'other'] as const
+const getRandomCategory = (): string => CATEGORIES[Math.floor(Math.random() * CATEGORIES.length)] || 'other'
 
 export const catalogApi = {
   // Получить услуги с фильтрацией
@@ -18,7 +20,7 @@ export const catalogApi = {
           name: `Услуга по выкупу товаров ${i + 1}`,
           description: `Профессиональный выкуп товаров из-за границы. Быстро, надежно, с гарантией.`,
           price: Math.floor(Math.random() * 10000) + 1000,
-          category: ['electronics', 'clothing', 'books', 'other'][Math.floor(Math.random() * 4)],
+          category: getRandomCategory(),
           images: [],
           customFields: [],
           buyerId: `buyer-${Math.floor(Math.random() * 5) + 1}`,
@@ -57,8 +59,9 @@ export const catalogApi = {
         
         // Сортировка
         if (params.sortBy) {
-          filtered.sort((a, b) => {
-            let aValue: any, bValue: any
+      filtered.sort((a, b) => {
+        let aValue: number
+        let bValue: number
             
             switch (params.sortBy) {
               case 'price':

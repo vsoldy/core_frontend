@@ -3,16 +3,12 @@ import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
-    name: 'home',
-    component: () => import('../pages/HomePage.vue'),
-    meta: {
-      title: 'Главная'
-    }
+    redirect: { name: 'catalog' }
   },
   {
     path: '/catalog',
     name: 'catalog',
-    component: () => import('../pages/CatalogPage.vue'),
+    component: () => import('../pages/HomePage.vue'),
     meta: {
       title: 'Каталог услуг'
     }
@@ -49,6 +45,15 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('../pages/ProfilePage.vue'),
     meta: {
       title: 'Профиль',
+      requiresAuth: true
+    }
+  },
+  {
+    path: '/orders/:id',
+    name: 'order-details',
+    component: () => import('../pages/OrderDetailsPage.vue'),
+    meta: {
+      title: 'Заказ',
       requiresAuth: true
     }
   },
@@ -121,7 +126,7 @@ router.beforeEach(async (to, from, next) => {
   
   // Проверка на доступ только для гостей
   if (to.meta.guestOnly && auth.isAuthenticated.value) {
-    next({ name: 'home' })
+    next({ name: 'catalog' })
     return
   }
   
@@ -131,7 +136,7 @@ router.beforeEach(async (to, from, next) => {
     const allowedRoles = to.meta.allowedRoles as string[]
     
     if (!userRole || !allowedRoles.includes(userRole)) {
-      next({ name: 'home' })
+      next({ name: 'catalog' })
       return
     }
   }

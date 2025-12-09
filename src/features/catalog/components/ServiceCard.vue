@@ -59,7 +59,6 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '@/shared/composables/useAuth'
 import { useCartStore } from '@/stores/cart'
@@ -174,12 +173,14 @@ const takeOrder = () => {
 
 .card-image {
   position: relative;
-  height: 120px;
   background: var(--background-tertiary);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  aspect-ratio: 1 / 1;
+  width: 100%;
+  min-height: 180px;
 }
 
 .image-placeholder {
@@ -335,11 +336,11 @@ const takeOrder = () => {
 /* Адаптация для разных размеров экрана */
 @media (max-width: 768px) {
   .service-card {
-    min-height: 260px;
+    min-height: 240px;
   }
   
   .card-image {
-    height: 100px;
+    min-height: 140px;
   }
   
   .image-placeholder {
@@ -381,6 +382,10 @@ const takeOrder = () => {
 @media (max-width: 480px) {
   .service-card {
     min-height: auto;
+  }
+  
+  .card-image {
+    min-height: 160px;
   }
   
   .card-header {

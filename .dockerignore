@@ -1,0 +1,12 @@
+node_modules
+dist
+npm-debug.log
+pnpm-lock.yaml
+yarn.lock
+.git
+.gitignore
+.DS_Store
+*.local
+*.log
+coverage
+tmp

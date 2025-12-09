@@ -18,7 +18,7 @@ app.use(pinia)
 app.use(router)
 
 // Инициализация состояний при запуске
-const uiStore = useUiStore()
+useUiStore()
 const authStore = useAuthStore()
 
 // Проверяем авторизацию при загрузке
