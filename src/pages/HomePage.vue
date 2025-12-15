@@ -23,6 +23,7 @@
             <span class="filters-icon">⚙️</span>
             <span v-if="hasActiveFilters" class="active-filters-badge"></span>
           </button>
+
         </div>
       </div>
     </div>
@@ -66,15 +67,25 @@
 
         <!-- Сетка карточек -->
         <div v-else class="services-grid">
-          <ServiceCard
-            v-for="service in paginatedServices"
-            :key="service.id"
-            :service="service"
-            :show-add-to-cart="catalogType === 'services'"
-            :show-take-order="catalogType === 'requests'"
-            @add-to-cart="handleAddToCart"
-            @take-order="handleTakeOrder"
-          />
+          <template v-if="catalogType === 'services'">
+            <ServiceCard
+              v-for="service in paginatedServices"
+              :key="service.id"
+              :service="service"
+              :show-add-to-cart="true"
+              :show-take-order="false"
+              @add-to-cart="handleAddToCart"
+              @take-order="handleTakeOrder"
+            />
+          </template>
+          <template v-else>
+            <RequestCard
+              v-for="req in filteredRequests"
+              :key="req.id"
+              :request="req"
+              @respond="handleRespond"
+            />
+          </template>
         </div>
         
         <div ref="loadMoreRef" class="load-more-trigger"></div>
@@ -114,6 +125,48 @@
         </div>
       </div>
     </div>
+
+    <!-- Модалка создания запроса -->
+    <Teleport to="body">
+      <div v-if="showRequestModal" class="modal-backdrop" @click.self="showRequestModal = false">
+        <div class="modal">
+          <div class="modal-head">
+            <h3>Создать запрос на выкуп</h3>
+            <button class="close-btn" @click="showRequestModal = false">×</button>
+          </div>
+          <div class="modal-body">
+            <label>
+              Заголовок
+              <input v-model="requestForm.title" type="text" placeholder="Например, Выкуп ноутбука" />
+            </label>
+            <label>
+              Описание
+              <textarea
+                v-model="requestForm.description"
+                rows="3"
+                placeholder="Что купить, требования к проверке, сроки"
+              ></textarea>
+            </label>
+            <div class="modal-grid">
+              <label>
+                Бюджет, ₽
+                <input v-model.number="requestForm.budget" type="number" min="0" />
+              </label>
+              <label>
+                Категория
+                <select v-model="requestForm.category">
+                  <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
+                </select>
+              </label>
+            </div>
+          </div>
+          <div class="modal-actions">
+            <button class="btn ghost" type="button" @click="showRequestModal = false">Отмена</button>
+            <button class="btn primary" type="button" @click="submitRequest">Создать</button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -121,15 +174,21 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { debounce } from 'lodash-es'
+import { useRouter } from 'vue-router'
 import { useCatalogStore } from '@/stores/catalog'
+import { useRequestsStore } from '@/stores/requests'
 import { useAuth } from '@/shared/composables/useAuth'
 import CatalogFilters from '@/features/catalog/components/CatalogFilters.vue'
 import ServiceCard from '@/features/catalog/components/ServiceCard.vue'
+import RequestCard from '@/features/catalog/components/RequestCard.vue'
 import type { CatalogFilter } from '@/entities/catalog/types'
 import type { Service } from '@/entities/service/types'
+import type { Request } from '@/entities/request/types'
 
 const catalogStore = useCatalogStore()
-const { isBuyer } = useAuth()
+const requestsStore = useRequestsStore()
+const router = useRouter()
+const { isBuyer, user } = useAuth()
 
 // Получаем все реактивные свойства из хранилища через storeToRefs
 const {
@@ -142,12 +201,21 @@ const {
 } = storeToRefs(catalogStore)
 const hasMore = computed(() => storeHasMore?.value ?? false)
 
+const { requests, isLoading: isLoadingRequests } = storeToRefs(requestsStore)
+
 // Тип каталога
 const catalogType = ref<'services' | 'requests'>('services')
 // Показывать ли фильтры (модалка)
 const showFilters = ref(false)
+const showRequestModal = ref(false)
 // Поисковый запрос
 const searchQuery = ref('')
+const requestForm = ref({
+  title: '',
+  description: '',
+  budget: 3000,
+  category: 'other'
+})
 // Точка для авто-подгрузки
 const loadMoreRef = ref<HTMLElement | null>(null)
 let observer: IntersectionObserver | null = null
@@ -155,6 +223,9 @@ let observer: IntersectionObserver | null = null
 // Загружаем данные при монтировании
 onMounted(() => {
   loadCatalogData()
+  if (catalogType.value === 'requests') {
+    requestsStore.loadRequests()
+  }
   setupInfiniteScroll()
 })
 
@@ -194,23 +265,40 @@ const switchCatalogType = (type: 'services' | 'requests') => {
   catalogStore.resetFilters()
   searchQuery.value = ''
   loadCatalogData()
+  if (type === 'requests') {
+    requestsStore.loadRequests()
+  }
 }
 
 // Загрузка данных каталога
 const loadCatalogData = () => {
-  catalogStore.loadServices(mapCatalogType(), { append: false })
+  if (catalogType.value === 'services') {
+    catalogStore.loadServices(mapCatalogType(), { append: false })
+  } else {
+    requestsStore.loadRequests()
+  }
 }
 
 const loadMore = () => {
+  if (catalogType.value === 'requests') return
   if (!hasMore.value || isLoading.value) return
   catalogStore.loadServices(mapCatalogType(), { append: true })
 }
 
-const initialLoading = computed(() => isLoading.value && paginatedServices.value.length === 0)
-const isAppending = computed(() => isLoading.value && paginatedServices.value.length > 0)
+const initialLoading = computed(() => {
+  if (catalogType.value === 'requests') return isLoadingRequests.value && filteredRequests.value.length === 0
+  return isLoading.value && paginatedServices.value.length === 0
+})
+const isAppending = computed(() => {
+  if (catalogType.value === 'requests') return false
+  return isLoading.value && paginatedServices.value.length > 0
+})
 
 // Есть ли активные фильтры
 const hasActiveFilters = computed(() => {
+  if (catalogType.value === 'requests') {
+    return searchQuery.value !== ''
+  }
   return Object.values(filters.value).some(value => 
     value !== undefined && value !== '' && value !== null
   ) || searchQuery.value !== ''
@@ -218,8 +306,10 @@ const hasActiveFilters = computed(() => {
 
 // Обработка поиска с debounce
 const onSearchInput = debounce(() => {
-  catalogStore.setFilters({ ...filters.value, search: searchQuery.value })
-  loadCatalogData()
+  if (catalogType.value === 'services') {
+    catalogStore.setFilters({ ...filters.value, search: searchQuery.value })
+    loadCatalogData()
+  }
 }, 300)
 
 // Обновление фильтров
@@ -244,10 +334,44 @@ const handleTakeOrder = (service: Service) => {
   console.log('Order taken:', service)
 }
 
+const handleRespond = (request: Request) => {
+  router.push({ name: 'request', params: { id: request.id } })
+}
+
+const submitRequest = () => {
+  if (!requestForm.value.title.trim() || !requestForm.value.description.trim()) {
+    alert('Заполните заголовок и описание')
+    return
+  }
+  const newRequest = requestsStore.createRequest({
+    title: requestForm.value.title.trim(),
+    description: requestForm.value.description.trim(),
+    budget: requestForm.value.budget,
+    category: requestForm.value.category,
+    address: 'Не указан',
+    userId: user.value?.id || 'user-1'
+  })
+  showRequestModal.value = false
+  requestForm.value = {
+    title: '',
+    description: '',
+    budget: 3000,
+    category: 'other'
+  }
+  router.push({ name: 'request', params: { id: newRequest.id } })
+}
+
 // Инициализируем поиск из фильтров при загрузке
 watch(filters, (newFilters) => {
   searchQuery.value = newFilters.search || ''
 }, { immediate: true })
+
+const filteredRequests = computed(() => {
+  const q = searchQuery.value.toLowerCase()
+  return requests.value.filter((req) =>
+    req.title.toLowerCase().includes(q) || req.description.toLowerCase().includes(q)
+  )
+})
 </script>
 
 <style scoped>
@@ -337,6 +461,16 @@ watch(filters, (newFilters) => {
   cursor: pointer;
   transition: all var(--transition-fast);
   position: relative;
+}
+
+.create-request-btn {
+  padding: 0.55rem 0.85rem;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius-lg);
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .filters-btn:hover {
@@ -499,6 +633,74 @@ watch(filters, (newFilters) => {
   margin: 0 0 1.5rem 0;
   color: var(--text-secondary);
   font-size: 1rem;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 3000;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.modal {
+  background: var(--background-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  width: min(520px, 100%);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+}
+
+.modal-body input,
+.modal-body textarea,
+.modal-body select {
+  width: 100%;
+  padding: 0.65rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  background: var(--background-primary);
+  color: var(--text-primary);
+}
+
+.modal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--text-secondary);
 }
 
 .reset-btn {

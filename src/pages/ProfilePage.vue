@@ -113,6 +113,15 @@
           </li>
         </ul>
       </section>
+
+      <section class="card create-request-card" v-if="isUser">
+        <div class="section-head">
+          <h2>Новый запрос</h2>
+          <router-link to="/requests/new" class="link">Создать</router-link>
+        </div>
+        <p class="hint">Опишите, что нужно выкупить — выкупщики отправят отклики.</p>
+        <router-link to="/requests/new" class="btn primary">Создать запрос</router-link>
+      </section>
     </div>
   </div>
 </template>
@@ -124,7 +133,7 @@ import { useRouter } from 'vue-router'
 import { useAuth } from '@/shared/composables/useAuth'
 import { useUiStore, type Theme } from '@/stores/ui'
 
-const { user } = useAuth()
+const { user, isUser } = useAuth()
 const router = useRouter()
 const uiStore = useUiStore()
 const { theme } = storeToRefs(uiStore)
@@ -393,6 +402,13 @@ const formatPrice = (value: number) =>
 
 .addresses-card {
   grid-column: 1 / -1;
+}
+
+.create-request-card {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .orders-list {

@@ -10,7 +10,9 @@
       <p class="subtitle">{{ service.description }}</p>
       <div class="meta">
         <span class="pill">{{ categoryLabel }}</span>
-        <span class="pill rating">⭐ {{ service.rating.toFixed(1) }} · {{ service.reviewCount }} отзывов</span>
+        <RouterLink class="pill rating link-btn" :to="{ name: 'service-reviews', params: { id: service.id } }">
+          ⭐ {{ averageRating }} · {{ reviews.length }} отзывов
+        </RouterLink>
         <span class="pill ghost">ID: {{ service.id }}</span>
       </div>
     </header>
@@ -108,7 +110,27 @@
         </div>
       </div>
     </section>
-  </div>
+
+    <section class="card reviews">
+      <div class="section-head">
+        <h2>Отзывы</h2>
+        <span class="section-note">Средняя оценка: {{ averageRating }} · {{ reviews.length }} отзывов</span>
+      </div>
+      <div v-if="reviews.length === 0" class="empty-offers">Пока нет отзывов</div>
+      <ul v-else class="reviews-list">
+        <li v-for="review in reviews" :key="review.id" class="review-row">
+          <div class="review-head">
+            <p class="review-author">{{ review.author }}</p>
+            <span class="pill rating-pill">⭐ {{ review.rating }}</span>
+            <span class="pill ghost">{{ review.role === 'user' ? 'Покупатель' : 'Выкупщик' }}</span>
+            <span class="review-date">{{ formatDate(review.createdAt) }}</span>
+          </div>
+          <p class="review-text">{{ review.comment }}</p>
+        </li>
+      </ul>
+    </section>
+
+    </div>
 </template>
 
 <script setup lang="ts">
@@ -117,12 +139,15 @@ import { useRoute } from 'vue-router'
 import { useAuth } from '@/shared/composables/useAuth'
 import { useCartStore } from '@/stores/cart'
 import { useUiStore } from '@/stores/ui'
+import { useOffersStore } from '@/stores/offers'
 import type { Service, CustomField } from '@/entities/service/types'
+import type { Review } from '@/entities/review/types'
 
 const route = useRoute()
 const { isUser, isBuyer } = useAuth()
 const cartStore = useCartStore()
 const uiStore = useUiStore()
+const offersStore = useOffersStore()
 
 const service = ref<Service | null>(createMockService(route.params.id as string))
 
@@ -137,6 +162,16 @@ const highlights = [
   { icon: '🚚', title: 'Отправка в день выкупа', desc: 'Минимизируем сроки доставки до клиента' },
   { icon: '🛡️', title: 'Безопасность', desc: 'Фрод-чек продавца и защита платежей' }
 ]
+
+const reviews = ref<Review[]>(createMockReviews(service.value?.id || 'service-1'))
+const averageRating = computed(() => {
+  if (!reviews.value.length) return service.value?.rating || 0
+  const sum = reviews.value.reduce((acc, r) => acc + r.rating, 0)
+  return parseFloat((sum / reviews.value.length).toFixed(1))
+})
+
+// Отклики пока не отображаются на странице услуги; оставляем загрузку для будущей интеграции
+offersStore.loadOffers(service.value?.id || '')
 
 function createMockService(id: string): Service {
   const categories = ['electronics', 'clothing', 'books', 'other'] as const
@@ -182,6 +217,34 @@ const getCategoryEmoji = (category: string) => {
 
 const formatPrice = (value: number) =>
   new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', maximumFractionDigits: 0 }).format(value)
+
+const formatDate = (value?: string) =>
+  value
+    ? new Intl.DateTimeFormat('ru-RU', { day: '2-digit', month: 'short' }).format(new Date(value))
+    : '—'
+
+function createMockReviews(serviceId: string): Review[] {
+  return [
+    {
+      id: 'rev-1',
+      serviceId,
+      author: 'Анна К.',
+      role: 'user',
+      rating: 5,
+      comment: 'Все прошло быстро, продавец проверен, трек дали сразу.',
+      createdAt: new Date(Date.now() - 5 * 24 * 3600 * 1000).toISOString()
+    },
+    {
+      id: 'rev-2',
+      serviceId,
+      author: 'Илья П.',
+      role: 'user',
+      rating: 4,
+      comment: 'Доставка заняла 4 дня, но упаковка и отчет отличные.',
+      createdAt: new Date(Date.now() - 9 * 24 * 3600 * 1000).toISOString()
+    }
+  ]
+}
 
 const handleAddToCart = () => {
   if (!service.value) return
@@ -547,6 +610,228 @@ const handleTakeOrder = () => {
   font-size: 0.9rem;
 }
 
+.offers {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.offer-form {
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  padding: 0.75rem;
+  background: var(--background-tertiary);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+}
+
+.offer-form input,
+.offer-form textarea {
+  width: 100%;
+  padding: 0.65rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  background: var(--background-secondary);
+  color: var(--text-primary);
+}
+
+.offer-form textarea {
+  resize: vertical;
+}
+
+.accepted-banner {
+  border: 1px solid var(--accent-green);
+  background: rgba(16, 185, 129, 0.1);
+  border-radius: var(--border-radius-md);
+  padding: 0.75rem;
+}
+
+.accepted-title {
+  margin: 0;
+  font-weight: 700;
+  color: var(--accent-green);
+}
+
+.accepted-meta {
+  margin: 0.15rem 0 0;
+  color: var(--text-primary);
+}
+
+.offers-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.offer-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: 0.85rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  background: var(--background-tertiary);
+}
+
+.offer-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.offer-buyer {
+  margin: 0;
+  font-weight: 700;
+}
+
+.offer-comment {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.offer-meta {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.offer-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.empty-offers {
+  color: var(--text-secondary);
+}
+
+.status-proposed {
+  color: var(--text-secondary);
+  border-color: var(--border-color);
+}
+
+.status-accepted {
+  color: var(--accent-green);
+  border-color: var(--accent-green);
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.status-rejected {
+  color: var(--accent-red);
+  border-color: var(--accent-red);
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.reviews {
+  padding: 1.25rem;
+}
+
+.reviews-cta {
+  padding: 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.reviews-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.review-row {
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  padding: 0.85rem;
+  background: var(--background-tertiary);
+}
+
+.review-head {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.review-author {
+  margin: 0;
+  font-weight: 700;
+}
+
+.review-date {
+  margin-left: auto;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.review-text {
+  margin: 0.5rem 0 0;
+  color: var(--text-primary);
+}
+
+.rating-pill {
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+  background: color-mix(in srgb, var(--primary-color) 12%, var(--background-secondary));
+}
+
+.reviews-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 3000;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.reviews-modal {
+  background: var(--background-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  width: min(640px, 100%);
+  max-height: 80vh;
+  overflow: auto;
+  box-shadow: var(--shadow-lg);
+}
+
+.modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.modal-body {
+  padding: 1rem;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+
 @media (max-width: 1024px) {
   .grid {
     grid-template-columns: 1fr;
@@ -554,6 +839,11 @@ const handleTakeOrder = () => {
 
   .details-grid {
     grid-template-columns: 1fr;
+  }
+
+  .offer-row {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
 

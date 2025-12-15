@@ -16,6 +16,7 @@ export const useAuthStore = defineStore('auth', () => {
   const token = ref<string | null>(localStorage.getItem('auth_token'))
   const isAuthenticated = computed(() => !!token.value && !!user.value)
   const isLoading = ref(false)
+  const storedRole = (localStorage.getItem('user_role') as UserRole | null) || null
 
   // Геттеры для проверки ролей
   const isUser = computed(() => user.value?.role === 'user')
@@ -29,6 +30,7 @@ export const useAuthStore = defineStore('auth', () => {
           ...user.value,
           role: newRole
         }
+        localStorage.setItem('user_role', newRole)
     }
   }
 
@@ -49,6 +51,7 @@ export const useAuthStore = defineStore('auth', () => {
       
       user.value = mockUser
       token.value = 'mock-token'
+      localStorage.setItem('user_role', mockUser.role)
       
       // Сохраняем токен в зависимости от rememberMe
       if (rememberMe) {
@@ -71,6 +74,7 @@ export const useAuthStore = defineStore('auth', () => {
     token.value = null
     localStorage.removeItem('auth_token')
     sessionStorage.removeItem('auth_token')
+    localStorage.removeItem('user_role')
   }
 
   const checkAuth = async () => {
@@ -85,10 +89,13 @@ export const useAuthStore = defineStore('auth', () => {
         id: '1',
         email: 'test@example.com',
         name: 'Test User',
-        role: 'user' as UserRole,
+        role: (storedRole as UserRole) || ('user' as UserRole),
         avatar: null,
         phone: null,
         createdAt: new Date().toISOString()
+      }
+      if (storedRole) {
+        mockUser.role = storedRole
       }
       user.value = mockUser
     }
@@ -111,6 +118,7 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = mockUser
       token.value = 'mock-token'
       localStorage.setItem('auth_token', 'mock-token')
+      localStorage.setItem('user_role', mockUser.role)
       
       return { success: true, user: mockUser }
     } catch (error) {

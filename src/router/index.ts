@@ -22,6 +22,32 @@ const routes: Array<RouteRecordRaw> = [
     }
   },
   {
+    path: '/requests/new',
+    name: 'request-create',
+    component: () => import('../pages/RequestCreatePage.vue'),
+    meta: {
+      title: 'Создать запрос',
+      requiresAuth: true,
+      allowedRoles: ['user']
+    }
+  },
+  {
+    path: '/requests/:id',
+    name: 'request',
+    component: () => import('../pages/RequestPage.vue'),
+    meta: {
+      title: 'Запрос'
+    }
+  },
+  {
+    path: '/services/:id/reviews',
+    name: 'service-reviews',
+    component: () => import('../pages/ServiceReviewsPage.vue'),
+    meta: {
+      title: 'Отзывы'
+    }
+  },
+  {
     path: '/login',
     name: 'login',
     component: () => import('../pages/LoginPage.vue'),

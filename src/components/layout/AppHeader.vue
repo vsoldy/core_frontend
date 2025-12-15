@@ -31,6 +31,14 @@
             Профиль
           </RouterLink>
 
+          <RouterLink
+            v-if="isUser"
+            to="/requests/new"
+            class="nav-link cta-link"
+          >
+            + Создать запрос
+          </RouterLink>
+
           <div v-if="isMobileView" class="nav-extra">
             <button v-if="!isAuthenticated" @click="toggleTheme" class="theme-toggle">
               {{ isDarkTheme ? '🌙' : '☀️' }}
@@ -271,6 +279,12 @@ const updateRootHiddenClass = () => {
 .nav-link:hover,
 .nav-link.router-link-active {
   background-color: var(--background-tertiary);
+}
+
+.cta-link {
+  background: var(--primary-color);
+  color: white;
+  font-weight: 700;
 }
 
 .header-actions {
