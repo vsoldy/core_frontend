@@ -2,7 +2,7 @@
   <div class="service-page" v-if="service">
     <header class="page-header">
       <div class="breadcrumbs">
-        <router-link to="/catalog">Каталог</router-link>
+        <router-link to="/services">Услуги</router-link>
         <span>·</span>
         <span>{{ categoryLabel }}</span>
       </div>
@@ -34,13 +34,13 @@
 
       <aside class="summary card">
         <div class="price-block">
-          <p class="label">Стоимость услуги</p>
+          <p class="label">Стоимость товара</p>
           <p class="price">{{ formatPrice(service.price) }}</p>
           <p class="hint">Оплата после подтверждения выкупщика</p>
         </div>
 
         <div class="actions">
-          <button v-if="isUser" class="btn primary" @click="handleAddToCart">Добавить в корзину</button>
+          <button v-if="!isBuyer" class="btn primary" @click="handleAddToCart">Добавить в корзину</button>
           <button v-if="isBuyer" class="btn success" @click="handleTakeOrder">Взять заказ</button>
           <router-link class="btn ghost" to="/profile">Настроить адрес доставки</router-link>
         </div>
@@ -64,8 +64,8 @@
 
     <section class="card details">
       <div class="section-head">
-        <h2>Описание услуги</h2>
-        <span class="section-note">Прозрачные шаги и кастомные поля</span>
+        <h2>Описание товара</h2>
+        <span class="section-note">Прозрачные шаги и параметры</span>
       </div>
       <div class="details-grid">
         <div class="text">
@@ -74,7 +74,7 @@
             формирование трека и контроль доставки. Выкупщик держит связь в чате и отправляет отчёты по каждому этапу.
           </p>
           <p>
-            Услуга соответствует требованиям SOLDY: прозрачные статусы, возможность оставить отзыв и чат с менеджером.
+            Покупка соответствует требованиям SOLDY: прозрачные статусы, возможность оставить отзыв и чат с менеджером.
           </p>
           <div class="badges">
             <span class="chip">Гарантия возврата</span>
@@ -144,7 +144,7 @@ import type { Service, CustomField } from '@/entities/service/types'
 import type { Review } from '@/entities/review/types'
 
 const route = useRoute()
-const { isUser, isBuyer } = useAuth()
+const { isBuyer } = useAuth()
 const cartStore = useCartStore()
 const uiStore = useUiStore()
 const offersStore = useOffersStore()
@@ -179,6 +179,7 @@ function createMockService(id: string): Service {
   return {
     id: id || 'service-1',
     name: 'Выкуп и проверка товара из США',
+    brand: 'nike',
     description: 'Проверка продавца, фото/видео подтверждение, трек-номер и контроль доставки.',
     price: Math.floor(Math.random() * 5000) + 3500,
     category,
@@ -252,7 +253,7 @@ const handleAddToCart = () => {
   uiStore.addNotification({
     type: 'success',
     title: 'В корзине',
-    message: `${service.value.name} добавлена в корзину`,
+    message: `${service.value.name} добавлен в корзину`,
     duration: 2500
   })
 }

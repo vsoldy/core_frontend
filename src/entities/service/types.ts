@@ -1,12 +1,17 @@
 export interface Service {
   id: string
+  sku?: string
   name: string
+  brand?: string
+  category?: string
+  subcategory?: string
   description: string
   price: number
-  category: string
+  colors?: string[]
+  sizes?: string[]
   images: string[]
-  customFields: CustomField[]
-  buyerId: string
+  customFields?: CustomField[]
+  buyerId?: string
   rating: number
   reviewCount: number
   createdAt: string

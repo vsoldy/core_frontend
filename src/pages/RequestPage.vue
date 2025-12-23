@@ -2,7 +2,7 @@
   <div class="request-page" v-if="request">
     <header class="page-header">
       <div class="breadcrumbs">
-        <router-link to="/catalog">Каталог</router-link>
+        <router-link to="/services">Услуги</router-link>
         <span>·</span>
         <span>{{ categoryLabel }}</span>
       </div>
@@ -120,7 +120,7 @@ if (!request.value) {
     title: 'Запрос не найден',
     message: 'Вернулись в каталог'
   })
-  router.replace('/catalog')
+  router.replace('/services')
 }
 
 offersStore.loadOffers(request.value?.id || '')

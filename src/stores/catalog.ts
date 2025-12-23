@@ -6,11 +6,30 @@ import type { CatalogQueryParams } from '@/core/api/types'
 
 // Список категорий для гарантии string типа
 const CATEGORIES: string[] = ['electronics', 'clothing', 'books', 'other']
+const BRANDS: string[] = ['apple', 'samsung', 'nike', 'adidas', 'zara', 'hm', 'uniqlo', 'sony']
 
 // Хелпер функция для получения случайной категории
 const getRandomCategory = (): string => {
   const index = Math.floor(Math.random() * CATEGORIES.length)
   return CATEGORIES[index] || 'other'
+}
+
+const getRandomBrand = (): string => {
+  const index = Math.floor(Math.random() * BRANDS.length)
+  return BRANDS[index] || 'other'
+}
+
+const SUBCATEGORIES: Record<string, string[]> = {
+  electronics: ['smartphones', 'laptops', 'accessories'],
+  clothing: ['outerwear', 'shoes', 'fashion-accessories'],
+  books: ['bestsellers', 'comics', 'education'],
+  other: ['hobby', 'home']
+}
+
+const getRandomSubcategory = (category: string): string => {
+  const list = SUBCATEGORIES[category] ?? SUBCATEGORIES.other ?? ['general']
+  const index = Math.floor(Math.random() * list.length)
+  return list[index] || 'general'
 }
 
 // Mock API функция (позже заменим на реальный API)
@@ -21,16 +40,22 @@ const mockApi = {
     
     // Генерация моковых данных с гарантированными типами
     const allServices: Service[] = Array.from({ length: 100 }, (_, i) => {
+      const category = getRandomCategory()
       return {
         id: `service-${i + 1}`,
+        sku: `SKU-${i + 1}`,
         name: params.catalogType === 'requests' 
           ? `Запрос на выкуп товара ${i + 1}`
           : `Услуга по выкупу товаров ${i + 1}`,
+        brand: getRandomBrand(),
         description: params.catalogType === 'requests'
           ? `Нужно выкупить товар из США. Требуется помощь с покупкой и доставкой.`
           : `Профессиональный выкуп товаров из-за границы. Быстро, надежно, с гарантией. Услуга ${i + 1} включает полное сопровождение.`,
         price: Math.floor(Math.random() * 9000) + 1000, // 1000-10000
-        category: getRandomCategory(), // Гарантированно string
+        category, // Гарантированно string
+        subcategory: getRandomSubcategory(category),
+        colors: ['black', 'white'],
+        sizes: ['S', 'M', 'L'],
         images: [],
         customFields: [],
         buyerId: `buyer-${Math.floor(Math.random() * 5) + 1}`,
@@ -57,7 +82,26 @@ const mockApi = {
       const categories = Array.isArray(params.category) ? params.category : [params.category]
       if (categories.length > 0) {
         filtered = filtered.filter(service => 
-          categories.includes(service.category)
+          categories.includes(service.category || 'other')
+        )
+      }
+    }
+
+    if (params.subcategory) {
+      const subcategories = Array.isArray(params.subcategory) ? params.subcategory : [params.subcategory]
+      if (subcategories.length > 0) {
+        filtered = filtered.filter(service =>
+          service.subcategory && subcategories.includes(service.subcategory)
+        )
+      }
+    }
+
+    // Бренды
+    if (params.brand) {
+      const brands = Array.isArray(params.brand) ? params.brand : [params.brand]
+      if (brands.length > 0) {
+        filtered = filtered.filter(service =>
+          service.brand && brands.includes(service.brand)
         )
       }
     }
@@ -231,16 +275,22 @@ export const useCatalogStore = defineStore('catalog', () => {
   // Fallback функция для генерации моковых данных
   const generateMockServices = (type: 'buyer-service' | 'user-request') => {
     const mockServices: Service[] = Array.from({ length: 24 }, (_, i) => {
+      const category = getRandomCategory()
       return {
         id: `service-${i + 1}`,
+        sku: `SKU-${i + 1}`,
         name: type === 'buyer-service' 
           ? `Услуга по выкупу товаров ${i + 1}`
           : `Запрос на выкуп товара ${i + 1}`,
+        brand: getRandomBrand(),
         description: type === 'buyer-service'
           ? `Профессиональный выкуп товаров из-за границы. Быстро, надежно, с гарантией.`
           : `Нужно выкупить товар из США. Требуется помощь с покупкой и доставкой.`,
         price: Math.floor(Math.random() * 9000) + 1000,
-        category: getRandomCategory(),
+        category,
+        subcategory: getRandomSubcategory(category),
+        colors: ['black', 'white'],
+        sizes: ['S', 'M', 'L'],
         images: [],
         customFields: [],
         buyerId: `buyer-${Math.floor(Math.random() * 5) + 1}`,

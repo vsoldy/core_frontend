@@ -3,6 +3,8 @@ export type ServiceType = 'buyer-service' | 'user-request'
 
 export interface CatalogFilter {
   category?: string | string[]
+  brand?: string | string[]
+  subcategory?: string | string[]
   minPrice?: number
   maxPrice?: number
   search?: string

@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import type { User, UserRole } from '@/entities/user/types'
+import { useCartStore } from '@/stores/cart'
 
 export interface RegisterData {
   name: string
@@ -17,6 +18,7 @@ export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = computed(() => !!token.value && !!user.value)
   const isLoading = ref(false)
   const storedRole = (localStorage.getItem('user_role') as UserRole | null) || null
+  const cartStore = useCartStore()
 
   // Геттеры для проверки ролей
   const isUser = computed(() => user.value?.role === 'user')
@@ -59,6 +61,7 @@ export const useAuthStore = defineStore('auth', () => {
       } else {
         sessionStorage.setItem('auth_token', 'mock-token')
       }
+      await cartStore.syncAfterLogin()
       
       return { success: true }
     } catch (error) {
@@ -98,6 +101,7 @@ export const useAuthStore = defineStore('auth', () => {
         mockUser.role = storedRole
       }
       user.value = mockUser
+      await cartStore.syncAfterLogin()
     }
   }
 
@@ -119,6 +123,7 @@ export const useAuthStore = defineStore('auth', () => {
       token.value = 'mock-token'
       localStorage.setItem('auth_token', 'mock-token')
       localStorage.setItem('user_role', mockUser.role)
+      await cartStore.syncAfterLogin()
       
       return { success: true, user: mockUser }
     } catch (error) {

@@ -6,7 +6,7 @@
         <h1>Создать объявление на выкуп</h1>
         <p class="subtitle">Опишите, что нужно купить, бюджет и сроки. Выкупщики отправят отклики.</p>
       </div>
-      <router-link to="/catalog" class="link">← Вернуться в каталог</router-link>
+      <router-link to="/services" class="link">← Вернуться к услугам</router-link>
     </header>
 
     <form class="card form" @submit.prevent="submitRequest">
@@ -44,7 +44,7 @@
       </label>
 
       <div class="actions">
-        <router-link to="/catalog" class="btn ghost">Отмена</router-link>
+        <router-link to="/services" class="btn ghost">Отмена</router-link>
         <button class="btn primary" type="submit">Создать запрос</button>
       </div>
     </form>

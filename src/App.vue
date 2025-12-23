@@ -2,13 +2,22 @@
   <div class="app-wrapper" :class="{ 'dark-theme': isDarkTheme }">
     <AppHeader />
 
-<main class="app-main" :class="{ 'app-main--offset': !isCatalogRoute }">
-  <div class="container">
-    <router-view />
-  </div>
-</main>
+    <main
+      class="app-main"
+      :class="{
+        'app-main--offset': true,
+        'app-main--dashboard': isDashboardRoute
+      }"
+    >
+      <div v-if="isDashboardRoute">
+        <router-view />
+      </div>
+      <div v-else class="container">
+        <router-view />
+      </div>
+    </main>
 
-    <AppFooter />
+    <AppFooter v-if="showFooter" />
     <NotificationCenter />
   </div>
 </template>
@@ -25,7 +34,11 @@ import { useUiStore } from './stores'
 const uiStore = useUiStore()
 const { isDarkTheme } = storeToRefs(uiStore)
 const route = useRoute()
-const isCatalogRoute = computed(() => (route.name as string) === 'catalog')
+const isDashboardRoute = computed(() => {
+  const name = (route.name as string) || ''
+  return name.startsWith('dashboard') || route.path.startsWith('/dashboard')
+})
+const showFooter = computed(() => !isDashboardRoute.value)
 </script>
 
 <style scoped>
@@ -42,5 +55,19 @@ const isCatalogRoute = computed(() => (route.name as string) === 'catalog')
 
 .app-main--offset {
   padding-top: calc(var(--header-offset) + 0.75rem);
+}
+
+.app-main--dashboard {
+  padding-top: calc(var(--header-offset) + 0.5rem);
+  min-height: 100vh;
+}
+
+@media (max-width: 960px) {
+  .app-main--dashboard {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+    padding-top: 60px;
+  }
 }
 </style>

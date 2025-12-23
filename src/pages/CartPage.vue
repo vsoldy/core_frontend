@@ -3,17 +3,17 @@
     <header class="cart-header">
       <div>
         <p class="eyebrow">Корзина</p>
-        <h1>Ваши услуги для выкупа</h1>
-        <p class="subtitle">Доступно только для роли user. Управляйте заказом перед оформлением.</p>
+        <h1>Ваши товары для выкупа</h1>
+        <p class="subtitle">Добавляйте товары и переходите к оформлению после входа.</p>
       </div>
-      <router-link to="/catalog" class="link">← Вернуться в каталог</router-link>
+      <router-link to="/services" class="link">← Вернуться к каталогу</router-link>
     </header>
 
     <div v-if="isEmpty" class="empty-state">
       <div class="empty-icon">🛒</div>
       <h3>Корзина пуста</h3>
-      <p>Добавьте услуги из каталога, чтобы продолжить оформление.</p>
-      <router-link to="/catalog" class="btn primary">Перейти в каталог</router-link>
+      <p>Добавьте товары из каталога, чтобы продолжить оформление.</p>
+      <router-link to="/services" class="btn primary">Перейти к каталогу</router-link>
     </div>
 
     <div v-else class="cart-grid">
@@ -26,10 +26,10 @@
         <ul class="items-list">
           <li v-for="item in items" :key="item.service.id" class="item-row">
             <div class="item-info">
-              <div class="item-thumb">{{ getCategoryEmoji(item.service.category) }}</div>
+              <div class="item-thumb">{{ getCategoryEmoji(item.service.category || 'other') }}</div>
               <div>
                 <p class="item-title">{{ item.service.name }}</p>
-                <p class="item-meta">{{ getCategoryName(item.service.category) }}</p>
+                <p class="item-meta">{{ getCategoryName(item.service.category || 'other') }}</p>
               </div>
             </div>
 
@@ -46,7 +46,7 @@
 
             <div class="price-block">
               <p class="price">{{ formatPrice(item.service.price * item.quantity) }}</p>
-              <p class="unit">({{ formatPrice(item.service.price) }} за услугу)</p>
+              <p class="unit">({{ formatPrice(item.service.price) }} за товар)</p>
             </div>
 
             <button class="remove-btn" @click="remove(item.service.id)">×</button>
@@ -61,17 +61,40 @@
           <strong>{{ formatPrice(totalPrice) }}</strong>
         </div>
         <div class="summary-row">
+          <span>Комиссия платформы</span>
+          <strong>{{ formatPrice(platformFee) }}</strong>
+        </div>
+        <div class="summary-row">
+          <span>Выкуп и проверка</span>
+          <strong>{{ formatPrice(buyoutFee) }}</strong>
+        </div>
+        <div class="summary-row">
+          <span>Склад и консолидация</span>
+          <strong>{{ formatPrice(warehouseFee) }}</strong>
+        </div>
+        <div class="summary-row">
           <span>Доставка</span>
           <strong>{{ shippingPrice > 0 ? formatPrice(shippingPrice) : 'Бесплатно' }}</strong>
         </div>
+        <div class="summary-row">
+          <span>Страхование</span>
+          <strong>{{ formatPrice(insuranceFee) }}</strong>
+        </div>
         <div class="summary-row total">
-          <span>К оплате</span>
+          <span>К оплате (оценка)</span>
           <strong>{{ formatPrice(grandTotal) }}</strong>
         </div>
 
         <div class="summary-actions">
           <button class="btn primary" @click="checkout">Оформить заказ</button>
-          <router-link to="/catalog" class="btn ghost">Добавить ещё</router-link>
+          <router-link to="/services" class="btn ghost">Добавить ещё</router-link>
+        </div>
+        <div v-if="!isAuthenticated" class="auth-hint">
+          <p>Для оформления заказа нужно войти или зарегистрироваться.</p>
+          <div class="auth-actions">
+            <router-link to="/login?redirect=/checkout" class="btn ghost">Войти</router-link>
+            <router-link to="/register?redirect=/checkout" class="btn primary">Регистрация</router-link>
+          </div>
         </div>
       </aside>
     </div>
@@ -84,15 +107,29 @@ import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import { useCartStore } from '@/stores/cart'
 import { useUiStore } from '@/stores/ui'
+import { useAuth } from '@/shared/composables/useAuth'
 
 const cartStore = useCartStore()
 const uiStore = useUiStore()
 const router = useRouter()
+const { isAuthenticated } = useAuth()
 
 const { items, totalItems, totalPrice, isEmpty } = storeToRefs(cartStore)
 
-const shippingPrice = computed(() => (totalPrice.value > 10000 ? 0 : 500))
-const grandTotal = computed(() => totalPrice.value + shippingPrice.value)
+const platformFee = computed(() => Math.round(totalPrice.value * 0.07))
+const buyoutFee = computed(() => Math.round(totalPrice.value * 0.03))
+const warehouseFee = computed(() => (items.value.length > 0 ? 600 : 0))
+const shippingPrice = computed(() => (totalPrice.value > 10000 ? 0 : 700))
+const insuranceFee = computed(() => Math.round(totalPrice.value * 0.01))
+const grandTotal = computed(
+  () =>
+    totalPrice.value +
+    platformFee.value +
+    buyoutFee.value +
+    warehouseFee.value +
+    shippingPrice.value +
+    insuranceFee.value
+)
 
 const changeQty = (serviceId: string, newQty: number) => {
   if (newQty <= 0) {
@@ -113,7 +150,7 @@ const remove = (serviceId: string) => {
   uiStore.addNotification({
     type: 'warning',
     title: 'Удалено',
-    message: 'Услуга убрана из корзины',
+    message: 'Товар убран из корзины',
     duration: 2000
   })
 }
@@ -129,13 +166,17 @@ const clearCart = () => {
 }
 
 const checkout = () => {
-  uiStore.addNotification({
-    type: 'info',
-    title: 'Оформление',
-    message: 'Формирование заказа будет добавлено позже',
-    duration: 3000
-  })
-  router.push('/profile')
+  if (!isAuthenticated.value) {
+    uiStore.addNotification({
+      type: 'info',
+      title: 'Нужен вход',
+      message: 'Войдите или зарегистрируйтесь, чтобы оформить заказ.',
+      duration: 3000
+    })
+    router.push({ name: 'login', query: { redirect: '/checkout' } })
+    return
+  }
+  router.push('/checkout')
 }
 
 const formatPrice = (value: number) =>
@@ -344,6 +385,22 @@ const getCategoryEmoji = (category: string) => {
   flex-direction: column;
   gap: 0.5rem;
   margin-top: 0.5rem;
+}
+
+.auth-hint {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  border-radius: var(--border-radius-md);
+  border: 1px dashed var(--border-color);
+  color: var(--text-secondary);
+  background: var(--background-tertiary);
+}
+
+.auth-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .btn {

@@ -48,7 +48,7 @@ const averageRating = computed(() => {
 })
 
 if (!service.value) {
-  router.replace('/catalog')
+  router.replace('/services')
 }
 
 const formatDate = (value?: string) =>

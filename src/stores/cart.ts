@@ -1,6 +1,7 @@
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { defineStore } from 'pinia'
 import type { Service } from '@/entities/service/types'
+import { cartApi } from '@/features/cart/api/cart.api'
 
 export interface CartItem {
   service: Service
@@ -8,9 +9,24 @@ export interface CartItem {
   selectedOptions?: Record<string, unknown>
 }
 
+const CART_STORAGE_KEY = 'soldy_cart_items_v1'
+
 export const useCartStore = defineStore('cart', () => {
   const items = ref<CartItem[]>([])
   const isOpen = ref(false)
+
+  const loadFromStorage = () => {
+    try {
+      const raw = localStorage.getItem(CART_STORAGE_KEY)
+      if (!raw) return
+      const parsed = JSON.parse(raw) as CartItem[]
+      if (Array.isArray(parsed)) {
+        items.value = parsed
+      }
+    } catch (error) {
+      console.warn('Failed to load cart from storage', error)
+    }
+  }
 
   // Геттеры
   const totalItems = computed(() => 
@@ -73,6 +89,39 @@ export const useCartStore = defineStore('cart', () => {
     isOpen.value = !isOpen.value
   }
 
+  const syncAfterLogin = async () => {
+    try {
+      const payload = {
+        items: items.value.map((item) => ({
+          serviceId: item.service.id,
+          quantity: item.quantity,
+          selectedOptions: item.selectedOptions
+        }))
+      }
+      await cartApi.syncCart(payload)
+      const serverItems = await cartApi.getCart()
+      if (serverItems?.length) {
+        items.value = serverItems as CartItem[]
+      }
+    } catch (error) {
+      console.warn('Failed to sync cart with server', error)
+    }
+  }
+
+  watch(
+    items,
+    (value) => {
+      try {
+        localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(value))
+      } catch (error) {
+        console.warn('Failed to persist cart', error)
+      }
+    },
+    { deep: true }
+  )
+
+  loadFromStorage()
+
   return {
     // Состояние
     items,
@@ -88,6 +137,7 @@ export const useCartStore = defineStore('cart', () => {
     removeFromCart,
     updateQuantity,
     clearCart,
-    toggleCart
+    toggleCart,
+    syncAfterLogin
   }
 })

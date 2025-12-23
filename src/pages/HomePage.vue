@@ -1,32 +1,14 @@
 <template>
   <div class="catalog-page">
-    <!-- Поисковая строка (всегда видна) -->
-    <div class="search-section">
-      <div class="container">
-        <div class="search-container">
-          <div class="search-input-wrapper">
-            <input
-              v-model="searchQuery"
-              type="text"
-              placeholder="Поиск услуг..."
-              class="search-input"
-              @input="onSearchInput"
-            />
-            <span class="search-icon">🔍</span>
-          </div>
-          
-          <button 
-            class="filters-btn"
-            @click="showFilters = true"
-            aria-label="Фильтры"
-          >
-            <span class="filters-icon">⚙️</span>
-            <span v-if="hasActiveFilters" class="active-filters-badge"></span>
-          </button>
-
-        </div>
-      </div>
-    </div>
+    <button
+      class="filters-btn prominent filters-fab"
+      @click="showFilters = true"
+      aria-label="Фильтры"
+    >
+      <span class="filters-icon">⚙️</span>
+      <span class="filters-label">Фильтры</span>
+      <span v-if="hasActiveFilters" class="active-filters-badge"></span>
+    </button>
 
     <!-- Переключатель типов -->
     <div v-if="isBuyer" class="container catalog-heading">
@@ -35,7 +17,7 @@
           :class="['type-btn', { 'type-btn-active': catalogType === 'services' }]"
           @click="switchCatalogType('services')"
         >
-          Услуги
+          Товары
         </button>
         <button
           :class="['type-btn', { 'type-btn-active': catalogType === 'requests' }]"
@@ -50,15 +32,15 @@
     <div class="catalog-main">
       <div class="container">
         <!-- Индикатор загрузки -->
-        <div v-if="initialLoading" class="loading-state">
-          <div class="spinner"></div>
-          <p>Загрузка услуг...</p>
-        </div>
+          <div v-if="initialLoading" class="loading-state">
+            <div class="spinner"></div>
+            <p>Загрузка товаров...</p>
+          </div>
 
         <!-- Сообщение при отсутствии результатов -->
         <div v-else-if="paginatedServices.length === 0" class="empty-state">
           <div class="empty-icon">🔍</div>
-          <h3>Услуги не найдены</h3>
+          <h3>Товары не найдены</h3>
           <p>Попробуйте изменить параметры поиска или фильтры</p>
           <button @click="resetAllFilters" class="reset-btn">
             Сбросить все фильтры
@@ -98,30 +80,32 @@
 
     <!-- Модалка фильтров (отдельная страница) -->
     <div v-if="showFilters" class="filters-modal">
-      <div class="filters-modal-header">
-        <div class="container">
+      <div class="filters-modal-panel">
+        <div class="filters-modal-header">
           <div class="filters-header-content">
             <h2 class="filters-title">Фильтры</h2>
             <div class="filters-header-actions">
               <button @click="resetAllFilters" class="reset-all-btn">
                 Сбросить все
               </button>
-              <button @click="showFilters = false" class="close-filters-btn">
-                Готово
+              <button @click="closeFilters" class="close-filters-btn">
+                Закрыть
               </button>
             </div>
           </div>
         </div>
-      </div>
-      
-      <div class="filters-modal-content">
-        <div class="container">
+        
+        <div class="filters-modal-content">
           <CatalogFilters
             :filters="filters"
             :categories="categories"
             :price-range="priceRange"
             @update:filters="handleFiltersUpdate"
           />
+        </div>
+
+        <div class="filters-modal-footer">
+          <button class="apply-filters-btn" @click="closeFilters">Показать товары</button>
         </div>
       </div>
     </div>
@@ -173,8 +157,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { storeToRefs } from 'pinia'
-import { debounce } from 'lodash-es'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useCatalogStore } from '@/stores/catalog'
 import { useRequestsStore } from '@/stores/requests'
 import { useAuth } from '@/shared/composables/useAuth'
@@ -188,6 +171,7 @@ import type { Request } from '@/entities/request/types'
 const catalogStore = useCatalogStore()
 const requestsStore = useRequestsStore()
 const router = useRouter()
+const route = useRoute()
 const { isBuyer, user } = useAuth()
 
 // Получаем все реактивные свойства из хранилища через storeToRefs
@@ -222,7 +206,7 @@ let observer: IntersectionObserver | null = null
 
 // Загружаем данные при монтировании
 onMounted(() => {
-  loadCatalogData()
+  applyQueryFilters()
   if (catalogType.value === 'requests') {
     requestsStore.loadRequests()
   }
@@ -279,6 +263,26 @@ const loadCatalogData = () => {
   }
 }
 
+const applyQueryFilters = () => {
+  if (catalogType.value !== 'services') return
+  const category = typeof route.query.category === 'string' ? route.query.category : undefined
+  const brand = typeof route.query.brand === 'string' ? route.query.brand : undefined
+  const subcategory = typeof route.query.subcategory === 'string' ? route.query.subcategory : undefined
+  const search = typeof route.query.search === 'string' ? route.query.search : undefined
+  const sortBy = typeof route.query.sortBy === 'string' ? route.query.sortBy : undefined
+  const sortOrder = typeof route.query.sortOrder === 'string' ? route.query.sortOrder : undefined
+  catalogStore.setFilters({
+    category: category || undefined,
+    brand: brand || undefined,
+    subcategory: subcategory || undefined,
+    search: search || undefined,
+    sortBy: (sortBy as 'price' | 'rating' | 'date') || undefined,
+    sortOrder: (sortOrder as 'asc' | 'desc') || undefined
+  })
+  searchQuery.value = search || ''
+  loadCatalogData()
+}
+
 const loadMore = () => {
   if (catalogType.value === 'requests') return
   if (!hasMore.value || isLoading.value) return
@@ -304,14 +308,6 @@ const hasActiveFilters = computed(() => {
   ) || searchQuery.value !== ''
 })
 
-// Обработка поиска с debounce
-const onSearchInput = debounce(() => {
-  if (catalogType.value === 'services') {
-    catalogStore.setFilters({ ...filters.value, search: searchQuery.value })
-    loadCatalogData()
-  }
-}, 300)
-
 // Обновление фильтров
 const handleFiltersUpdate = (newFilters: CatalogFilter) => {
   catalogStore.setFilters(newFilters)
@@ -323,6 +319,10 @@ const resetAllFilters = () => {
   catalogStore.resetFilters()
   searchQuery.value = ''
   loadCatalogData()
+}
+
+const closeFilters = () => {
+  showFilters.value = false
 }
 
 // Обработчики действий
@@ -366,6 +366,13 @@ watch(filters, (newFilters) => {
   searchQuery.value = newFilters.search || ''
 }, { immediate: true })
 
+watch(
+  () => route.query,
+  () => {
+    applyQueryFilters()
+  }
+)
+
 const filteredRequests = computed(() => {
   const q = searchQuery.value.toLowerCase()
   return requests.value.filter((req) =>
@@ -379,72 +386,49 @@ const filteredRequests = computed(() => {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  padding-top: var(--header-offset);
+  padding-top: 0;
 }
 
-/* Поисковая строка */
-.search-section {
-  background: var(--background-secondary);
-  border-bottom: 1px solid var(--border-color);
-  padding: 0.35rem 0 0.35rem;
-  position: sticky;
-  top: var(--header-offset);
-  z-index: 90;
-  background-color: var(--background-secondary);
-  left: 0;
-  right: 0;
-  width: 100vw;
-  margin-left: calc(50% - 50vw);
-  transition: transform var(--transition-normal);
-}
-
-.search-section .container {
-  max-width: none;
-  width: 100%;
-  padding-left: var(--gutter);
-  padding-right: var(--gutter);
-}
-
-.header-hidden .search-section {
-  transform: translateY(calc(-1 * var(--header-offset)));
-}
-
-.search-container {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex-wrap: nowrap;
-}
-
-.search-input-wrapper {
-  flex: 1;
-  position: relative;
-}
-
-.search-input {
-  width: 100%;
-  padding: 0.55rem 0.85rem 0.55rem 2.4rem;
-  border: 2px solid var(--border-color);
-  border-radius: var(--border-radius-lg);
-  background: var(--background-primary);
-  color: var(--text-primary);
-  font-size: 1rem;
-  transition: all var(--transition-fast);
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.1);
-}
-
-.search-icon {
-  position: absolute;
-  left: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
+.search-chip {
+  padding: 0.35rem 0.6rem;
+  border-radius: var(--radius-pill);
+  background: var(--background-tertiary);
+  border: 1px solid var(--border-color);
+  font-size: 0.85rem;
   color: var(--text-secondary);
-  font-size: 1.125rem;
+  display: inline-flex;
+  align-items: center;
+  margin-right: 0.75rem;
+}
+
+.filters-fab {
+  position: static;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.6rem;
+  font-size: 0.8rem;
+  min-width: 0;
+  width: auto;
+  max-width: max-content;
+  white-space: nowrap;
+  align-self: flex-end;
+  margin: var(--space-3) var(--gutter) 0 auto;
+}
+
+@media (max-width: 768px) {
+  .filters-fab {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+  }
+
+  .filters-fab .filters-icon {
+    margin: 0;
+  }
 }
 
 .filters-btn {
@@ -461,6 +445,11 @@ const filteredRequests = computed(() => {
   cursor: pointer;
   transition: all var(--transition-fast);
   position: relative;
+}
+
+.filters-btn.prominent {
+  border-color: var(--primary-color);
+  box-shadow: 0 6px 20px rgba(var(--primary-color-rgb), 0.15);
 }
 
 .create-request-btn {
@@ -736,30 +725,37 @@ const filteredRequests = computed(() => {
 /* Модалка фильтров (отдельная страница) */
 .filters-modal {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: var(--background-primary);
-  z-index: 2000;
-  display: flex;
-  flex-direction: column;
-  animation: slideIn 0.3s ease;
+  inset: 0;
+  background: rgba(10, 12, 20, 0.6);
+  z-index: 2400;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+}
+
+.filters-modal-panel {
+  width: min(920px, 100%);
+  height: min(92vh, 820px);
+  background: var(--background-secondary);
+  border-radius: var(--border-radius-xl);
+  border: 1px solid var(--border-color);
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
 }
 
 .filters-modal-header {
-  background: var(--background-secondary);
+  padding: 1.2rem 1.5rem;
   border-bottom: 1px solid var(--border-color);
-  padding: 1rem 0;
-  position: sticky;
-  top: 0;
-  z-index: 10;
 }
 
 .filters-header-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .filters-title {
@@ -770,7 +766,8 @@ const filteredRequests = computed(() => {
 
 .filters-header-actions {
   display: flex;
-  gap: 1rem;
+  gap: 0.75rem;
+  align-items: center;
 }
 
 .reset-all-btn {
@@ -792,9 +789,9 @@ const filteredRequests = computed(() => {
 
 .close-filters-btn {
   padding: 0.625rem 1.25rem;
-  background: var(--primary-color);
-  border: none;
-  color: white;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
   border-radius: var(--border-radius-md);
   font-size: 0.875rem;
   font-weight: 600;
@@ -803,40 +800,48 @@ const filteredRequests = computed(() => {
 }
 
 .close-filters-btn:hover {
-  background: var(--primary-color-dark);
+  background: var(--background-tertiary);
 }
 
 .filters-modal-content {
-  flex: 1;
   overflow-y: auto;
-  padding: 2rem 0;
+  padding: 1.5rem;
 }
 
-@keyframes slideIn {
-  from { transform: translateX(100%); }
-  to { transform: translateX(0); }
+.filters-modal-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.apply-filters-btn {
+  background: var(--primary-color);
+  color: white;
+  border: 1px solid var(--primary-color);
+  padding: 0.7rem 1.25rem;
+  border-radius: var(--border-radius-md);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.apply-filters-btn:hover {
+  background: var(--primary-color-dark);
 }
 
 /* Адаптация для мобильных */
 @media (max-width: 768px) {
-  .search-container {
-    flex-direction: row;
-    align-items: stretch;
-    gap: 0.5rem;
-  }
-
-  .search-section {
-    top: var(--header-offset);
-    padding: 0.35rem 0 0.35rem;
-  }
-
   .catalog-page {
-    padding-top: var(--header-offset);
+    padding-top: 0;
   }
-  
-  .search-input-wrapper,
-  .filters-btn {
-    flex: 1;
+
+  .filters-label {
+    display: none;
+  }
+
+  .filters-fab {
+    margin-right: var(--gutter);
+    margin-left: auto;
   }
 
   .filters-btn {

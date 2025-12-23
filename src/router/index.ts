@@ -3,22 +3,67 @@ import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
-    redirect: { name: 'catalog' }
-  },
-  {
-    path: '/catalog',
-    name: 'catalog',
-    component: () => import('../pages/HomePage.vue'),
+    name: 'home',
+    component: () => import('../pages/LandingPage.vue'),
     meta: {
-      title: 'Каталог услуг'
+      title: 'Главная'
     }
   },
   {
-    path: '/catalog/:id',
-    name: 'service',
-    component: () => import('../pages/ServicePage.vue'),
+    path: '/about',
+    name: 'about',
+    component: () => import('../pages/AboutPage.vue'),
     meta: {
-      title: 'Услуга'
+      title: 'О нас'
+    }
+  },
+  {
+    path: '/services',
+    name: 'services',
+    component: () => import('../pages/HomePage.vue'),
+    meta: {
+      title: 'Каталог'
+    }
+  },
+  {
+    path: '/pricing',
+    name: 'pricing',
+    component: () => import('../pages/PricingPage.vue'),
+    meta: {
+      title: 'Цены'
+    }
+  },
+  {
+    path: '/stores',
+    name: 'stores',
+    component: () => import('../pages/StoresPage.vue'),
+    meta: {
+      title: 'Магазины'
+    }
+  },
+  {
+    path: '/contacts',
+    name: 'contacts',
+    component: () => import('../pages/ContactsPage.vue'),
+    meta: {
+      title: 'Контакты'
+    }
+  },
+  {
+    path: '/faq',
+    name: 'faq',
+    component: () => import('../pages/FaqPage.vue'),
+    meta: {
+      title: 'Вопросы'
+    }
+  },
+  {
+    path: '/support/new',
+    name: 'support-new',
+    component: () => import('../pages/SupportRequestPage.vue'),
+    meta: {
+      title: 'Поддержка',
+      requiresAuth: true
     }
   },
   {
@@ -37,6 +82,14 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('../pages/RequestPage.vue'),
     meta: {
       title: 'Запрос'
+    }
+  },
+  {
+    path: '/services/:id',
+    name: 'service',
+    component: () => import('../pages/ServicePage.vue'),
+    meta: {
+      title: 'Услуга'
     }
   },
   {
@@ -88,7 +141,15 @@ const routes: Array<RouteRecordRaw> = [
     name: 'cart',
     component: () => import('../pages/CartPage.vue'),
     meta: {
-      title: 'Корзина',
+      title: 'Корзина'
+    }
+  },
+  {
+    path: '/checkout',
+    name: 'checkout',
+    component: () => import('../pages/CheckoutPage.vue'),
+    meta: {
+      title: 'Оформление заказа',
       requiresAuth: true,
       allowedRoles: ['user']
     }
@@ -112,6 +173,100 @@ const routes: Array<RouteRecordRaw> = [
       requiresAuth: true,
       allowedRoles: ['admin', 'manager']
     }
+  },
+  {
+    path: '/dashboard',
+    component: () => import('../pages/dashboard/DashboardLayout.vue'),
+    meta: {
+      requiresAuth: true,
+      title: 'Личный кабинет'
+    },
+    children: [
+      {
+        path: '',
+        name: 'dashboard-home',
+        component: () => import('../pages/dashboard/DashboardHomePage.vue'),
+        meta: { title: 'Личный кабинет' }
+      },
+      {
+        path: 'orders',
+        name: 'dashboard-orders',
+        component: () => import('../pages/dashboard/DashboardOrdersPage.vue'),
+        meta: { title: 'История заказов' }
+      },
+      {
+        path: 'parcels',
+        name: 'dashboard-parcels',
+        component: () => import('../pages/dashboard/DashboardParcelsPage.vue'),
+        meta: { title: 'Посылки' }
+      },
+      {
+        path: 'send-parcel',
+        name: 'dashboard-send-parcel',
+        component: () => import('../pages/dashboard/DashboardSendParcelPage.vue'),
+        meta: { title: 'Отправить посылку' }
+      },
+      {
+        path: 'favorites',
+        name: 'dashboard-favorites',
+        component: () => import('../pages/dashboard/DashboardFavoritesPage.vue'),
+        meta: { title: 'Избранное' }
+      },
+      {
+        path: 'addresses',
+        name: 'dashboard-addresses',
+        component: () => import('../pages/dashboard/DashboardAddressesPage.vue'),
+        meta: { title: 'Адреса доставки' }
+      },
+      {
+        path: 'balance',
+        name: 'dashboard-balance',
+        component: () => import('../pages/dashboard/DashboardBalancePage.vue'),
+        meta: { title: 'Финансы' }
+      },
+      {
+        path: 'buyer/requests',
+        name: 'dashboard-buyer-requests',
+        component: () => import('../pages/dashboard/BuyerRequestsPage.vue'),
+        meta: { title: 'Запросы на исполнение' }
+      },
+      {
+        path: 'buyer/in-progress',
+        name: 'dashboard-buyer-in-progress',
+        component: () => import('../pages/dashboard/BuyerInProgressPage.vue'),
+        meta: { title: 'Заказы в работе' }
+      },
+      {
+        path: 'buyer/completed',
+        name: 'dashboard-buyer-completed',
+        component: () => import('../pages/dashboard/BuyerCompletedPage.vue'),
+        meta: { title: 'Завершенные заказы' }
+      },
+      {
+        path: 'buyer/catalog',
+        name: 'dashboard-buyer-catalog',
+        component: () => import('../pages/dashboard/BuyerCatalogCreatePage.vue'),
+        meta: { title: 'Создание объявления' }
+      },
+      {
+        path: 'profile',
+        name: 'dashboard-profile',
+        component: () => import('../pages/dashboard/DashboardProfilePage.vue'),
+        meta: { title: 'Настройки' }
+      },
+      {
+        path: 'chat',
+        name: 'dashboard-chat',
+        component: () => import('../pages/dashboard/DashboardChatPage.vue'),
+        meta: { title: 'Чат' }
+      },
+      {
+        path: 'declarator',
+        name: 'dashboard-declarator',
+        component: () => import('../pages/dashboard/DashboardDeclaratorPage.vue'),
+        meta: { title: 'Декларатор' }
+      }
+    ]
   },
   {
     path: '/:pathMatch(.*)*',
@@ -152,7 +307,7 @@ router.beforeEach(async (to, from, next) => {
   
   // Проверка на доступ только для гостей
   if (to.meta.guestOnly && auth.isAuthenticated.value) {
-    next({ name: 'catalog' })
+    next({ name: 'home' })
     return
   }
   
@@ -162,7 +317,7 @@ router.beforeEach(async (to, from, next) => {
     const allowedRoles = to.meta.allowedRoles as string[]
     
     if (!userRole || !allowedRoles.includes(userRole)) {
-      next({ name: 'catalog' })
+      next({ name: 'home' })
       return
     }
   }

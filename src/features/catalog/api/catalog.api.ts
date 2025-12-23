@@ -44,7 +44,7 @@ export const catalogApi = {
           const categories = Array.isArray(params.category) ? params.category : [params.category]
           if (categories.length > 0) {
             filtered = filtered.filter(service => 
-              categories.includes(service.category)
+              categories.includes(service.category || 'other')
             )
           }
         }

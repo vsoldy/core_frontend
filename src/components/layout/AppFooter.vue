@@ -8,6 +8,18 @@
         </div>
         
         <div class="footer-section">
+          <h3>Навигация</h3>
+          <RouterLink to="/">Главная</RouterLink>
+          <RouterLink to="/about">О нас</RouterLink>
+          <RouterLink to="/services">Услуги</RouterLink>
+          <RouterLink to="/pricing">Цены</RouterLink>
+          <RouterLink to="/stores">Магазины</RouterLink>
+          <RouterLink to="/contacts">Контакты</RouterLink>
+          <RouterLink to="/faq">Вопросы</RouterLink>
+          <RouterLink to="/cart">Корзина</RouterLink>
+        </div>
+        
+        <div class="footer-section">
           <h3>Контакты</h3>
           <p>support@soldy.com</p>
           <p>+7 (XXX) XXX-XX-XX</p>
@@ -26,6 +38,7 @@
 </template>
 
 <script setup lang="ts">
+import { RouterLink } from 'vue-router'
 </script>
 
 <style scoped>
@@ -50,6 +63,17 @@
 .footer-section p {
   margin: 0.25rem 0;
   color: var(--text-secondary);
+}
+
+.footer-section a {
+  display: block;
+  margin: 0.25rem 0;
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+
+.footer-section a:hover {
+  color: var(--text-primary);
 }
 
 .footer-bottom {

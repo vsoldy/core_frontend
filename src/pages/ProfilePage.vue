@@ -96,7 +96,7 @@
       <section class="card orders-card">
         <div class="section-head">
           <h2>Последние заказы</h2>
-          <router-link to="/catalog" class="link">Каталог</router-link>
+          <router-link to="/services" class="link">Услуги</router-link>
         </div>
         <ul class="orders-list">
           <li v-for="order in recentOrders" :key="order.id" class="order-row">

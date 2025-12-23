@@ -9,13 +9,28 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  line-height: 1.6;
-  background-color: var(--background-primary);
+  font-family: var(--font-body);
+  line-height: 1.65;
+  background: var(--background-primary);
   color: var(--text-primary);
   transition: background-color var(--transition-normal), color var(--transition-normal);
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-heading);
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+p {
+  color: var(--text-secondary);
 }
 
 .container {
@@ -24,49 +39,22 @@ body {
   padding: 0 var(--gutter);
 }
 
+.container-wide {
+  max-width: var(--content-wide);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+
 .page-wrapper {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background: var(--background-accent);
 }
 
 .page-content {
   flex: 1;
-  padding: 2rem 0;
-}
-
-/* Стили для темной темы */
-.dark-theme {
-  --text-primary: var(--neutral-100);
-  --text-secondary: var(--neutral-400);
-  --text-disabled: var(--neutral-600);
-  
-  --background-primary: var(--neutral-900);
-  --background-secondary: var(--neutral-800);
-  --background-tertiary: var(--neutral-700);
-  
-  --border-color: var(--neutral-700);
-}
-
-/* Утилитные классы */
-.text-primary {
-  color: var(--text-primary);
-}
-
-.text-secondary {
-  color: var(--text-secondary);
-}
-
-.bg-primary {
-  background-color: var(--background-primary);
-}
-
-.bg-secondary {
-  background-color: var(--background-secondary);
-}
-
-.bg-tertiary {
-  background-color: var(--background-tertiary);
+  padding: var(--space-12) 0 var(--space-10);
 }
 
 img {
@@ -75,39 +63,61 @@ img {
   display: block;
 }
 
+/* Утилитные классы */
+.text-primary { color: var(--text-primary); }
+.text-secondary { color: var(--text-secondary); }
+.bg-primary { background-color: var(--background-primary); }
+.bg-secondary { background-color: var(--background-secondary); }
+.bg-tertiary { background-color: var(--background-tertiary); }
+
+.shadow-md { box-shadow: var(--shadow-md); }
+.shadow-lg { box-shadow: var(--shadow-lg); }
+
 /* Стили для кнопок */
 .btn {
-  display: inline-block;
-  padding: 0.625rem 1.25rem;
-  border: none;
-  border-radius: var(--border-radius-md);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.75rem 1.35rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
   cursor: pointer;
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 0.98rem;
   text-decoration: none;
-  transition: all var(--transition-fast);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), background-color var(--transition-fast), color var(--transition-fast);
+  background: var(--primary-color);
+  color: white;
+  box-shadow: var(--shadow-sm);
 }
 
 .btn:hover {
   transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 
-.btn-primary {
-  background-color: var(--primary-color);
-  color: white;
-}
-
-.btn-secondary {
-  background-color: var(--neutral-200);
+.btn-ghost {
+  background: var(--background-secondary);
   color: var(--text-primary);
+  border-color: var(--border-color);
+}
+
+.btn-text {
+  background: transparent;
+  color: var(--primary-color-dark);
+  border: none;
+  box-shadow: none;
 }
 
 /* Карточки */
 .card {
-  background-color: var(--background-secondary);
+  background-color: var(--background-card);
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-lg);
   padding: 1.5rem;
   box-shadow: var(--shadow-md);
+  backdrop-filter: blur(6px);
 }
 
 @media (max-width: 768px) {
@@ -116,6 +126,6 @@ img {
   }
   
   .page-content {
-    padding: 1.25rem 0;
+    padding: var(--space-8) 0;
   }
 }

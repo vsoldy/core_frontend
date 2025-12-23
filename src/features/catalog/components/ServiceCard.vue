@@ -2,63 +2,62 @@
   <div class="service-card" @click="handleClick">
     <div class="card-image">
       <div class="image-placeholder">
-        <span>{{ getCategoryEmoji(service.category) }}</span>
+        <span>{{ getCategoryEmoji(service.category || 'other') }}</span>
       </div>
       
-      <div class="card-badges">
-        <span class="badge category">{{ getCategoryName(service.category) }}</span>
-        <span v-if="service.rating" class="badge rating">
-          ⭐ {{ service.rating.toFixed(1) }}
-        </span>
-      </div>
     </div>
     
     <div class="card-content">
       <div class="card-header">
-        <h3 class="card-title">{{ service.name }}</h3>
+        <div>
+          <p class="card-brand">{{ service.brand || 'Без бренда' }}</p>
+          <h3 class="card-title">{{ service.name }}</h3>
+        </div>
         <div class="card-price">{{ formatPrice(service.price) }} ₽</div>
       </div>
-      
-      <p class="card-description">{{ truncateDescription(service.description) }}</p>
-      
+
       <div class="card-footer">
-        <div v-if="service.reviewCount > 0" class="reviews">
-          {{ service.reviewCount }} отзывов
+        <div v-if="service.rating" class="reviews">
+          ⭐ {{ service.rating.toFixed(1) }}
+          <span v-if="service.reviewCount">· {{ service.reviewCount }}</span>
         </div>
-        
+        <div v-else class="reviews muted">Нет оценок</div>
+
         <div class="card-actions">
-          <button 
-            v-if="showAddToCart && isUser" 
+          <button
+            v-if="showAddToCart && !isBuyer"
             class="add-to-cart-btn"
             @click.stop="addToCart"
             title="Добавить в корзину"
           >
-            🛒
+            Добавить в корзину
           </button>
-          
-          <button 
-            v-else-if="showTakeOrder && isBuyer" 
+
+          <button
+            v-else-if="showTakeOrder && isBuyer"
             class="take-order-btn"
             @click.stop="takeOrder"
             title="Взять заказ"
           >
-            📝
+            Взять заказ
           </button>
-          
-          <router-link 
-            :to="{ name: 'service', params: { id: service.id } }"
-            class="details-link"
-            @click.stop
-          >
-            Подробнее
-          </router-link>
         </div>
       </div>
     </div>
+    <button
+      v-if="showFavorite && !isBuyer"
+      :class="['favorite-btn', { active: isFavorite }]"
+      @click.stop="toggleFavorite"
+      title="В избранное"
+      aria-label="Добавить в избранное"
+    >
+      ♥
+    </button>
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '@/shared/composables/useAuth'
 import { useCartStore } from '@/stores/cart'
@@ -69,11 +68,13 @@ interface Props {
   service: Service
   showAddToCart?: boolean
   showTakeOrder?: boolean
+  showFavorite?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   showAddToCart: true,
-  showTakeOrder: false
+  showTakeOrder: false,
+  showFavorite: true
 })
 
 const emit = defineEmits<{
@@ -82,19 +83,14 @@ const emit = defineEmits<{
 }>()
 
 const router = useRouter()
-const { isUser, isBuyer } = useAuth()
+const { isBuyer } = useAuth()
 const cartStore = useCartStore()
 const uiStore = useUiStore()
+const isFavorite = ref(false)
 
 // Форматирование цены
 const formatPrice = (price: number) => {
   return price.toLocaleString('ru-RU')
-}
-
-// Сокращение описания
-const truncateDescription = (description: string, maxLength: number = 60) => {
-  if (description.length <= maxLength) return description
-  return description.substring(0, maxLength) + '...'
 }
 
 // Эмодзи для категорий
@@ -106,17 +102,6 @@ const getCategoryEmoji = (category: string) => {
     'other': '📦'
   }
   return emojiMap[category] || '📦'
-}
-
-// Название категории
-const getCategoryName = (category: string) => {
-  const names: Record<string, string> = {
-    'electronics': 'Электроника',
-    'clothing': 'Одежда',
-    'books': 'Книги',
-    'other': 'Другое'
-  }
-  return names[category] || category
 }
 
 // Обработка клика по карточке
@@ -136,6 +121,16 @@ const addToCart = () => {
   })
   
   emit('add-to-cart', props.service)
+}
+
+const toggleFavorite = () => {
+  isFavorite.value = !isFavorite.value
+  uiStore.addNotification({
+    type: 'success',
+    title: isFavorite.value ? 'В избранном' : 'Удалено из избранного',
+    message: props.service.name,
+    duration: 2000
+  })
 }
 
 // Взятие заказа в работу
@@ -163,6 +158,7 @@ const takeOrder = () => {
   flex-direction: column;
   height: 100%;
   min-height: 280px;
+  position: relative;
 }
 
 .service-card:hover {
@@ -186,34 +182,6 @@ const takeOrder = () => {
 .image-placeholder {
   font-size: 2rem;
   opacity: 0.5;
-}
-
-.card-badges {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  right: 8px;
-  display: flex;
-  justify-content: space-between;
-  pointer-events: none;
-}
-
-.badge {
-  padding: 3px 6px;
-  border-radius: var(--border-radius-sm);
-  font-size: 0.65rem;
-  font-weight: 500;
-  letter-spacing: 0.3px;
-}
-
-.badge.category {
-  background: var(--primary-color);
-  color: white;
-}
-
-.badge.rating {
-  background: var(--accent-yellow);
-  color: #000;
 }
 
 .card-content {
@@ -248,24 +216,18 @@ const takeOrder = () => {
   flex-shrink: 0;
 }
 
-.card-description {
-  margin: 0;
+.card-brand {
+  margin: 0 0 0.15rem;
   color: var(--text-secondary);
   font-size: 0.8rem;
   line-height: 1.4;
-  flex: 1;
-  min-height: 2.8em;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
 }
 
 .card-footer {
   margin-top: auto;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  align-items: stretch;
   gap: 0.5rem;
 }
 
@@ -275,22 +237,28 @@ const takeOrder = () => {
   white-space: nowrap;
 }
 
+.reviews.muted {
+  opacity: 0.7;
+}
+
 .card-actions {
   display: flex;
   gap: 0.5rem;
   align-items: center;
+  width: 100%;
 }
 
 .add-to-cart-btn,
 .take-order-btn {
-  width: 32px;
-  height: 32px;
+  width: 100%;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
   border: none;
   border-radius: var(--border-radius-md);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 600;
   cursor: pointer;
   transition: all var(--transition-fast);
   flex-shrink: 0;
@@ -316,21 +284,28 @@ const takeOrder = () => {
   transform: scale(1.05);
 }
 
-.details-link {
-  padding: 0.375rem 0.75rem;
-  color: var(--primary-color);
-  text-decoration: none;
-  font-weight: 500;
-  font-size: 0.8rem;
-  border: 1px solid var(--primary-color);
-  border-radius: var(--border-radius-md);
+.favorite-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.7);
+  color: #f8fafc;
+  font-size: 0.9rem;
+  cursor: pointer;
   transition: all var(--transition-fast);
-  white-space: nowrap;
+  z-index: 2;
 }
 
-.details-link:hover {
-  background: var(--primary-color);
-  color: white;
+.favorite-btn.active {
+  color: #f472b6;
+  border-color: rgba(244, 114, 182, 0.8);
+  background: rgba(15, 23, 42, 0.85);
 }
 
 /* Адаптация для разных размеров экрана */
@@ -360,13 +335,7 @@ const takeOrder = () => {
     font-size: 1rem;
   }
   
-  .card-description {
-    font-size: 0.75rem;
-  }
-  
   .card-footer {
-    flex-direction: column;
-    align-items: stretch;
     gap: 0.375rem;
   }
   

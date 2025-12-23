@@ -17,6 +17,8 @@ export interface CatalogQueryParams {
   limit?: number
   search?: string
   category?: string | string[]
+  brand?: string | string[]
+  subcategory?: string | string[]
   minPrice?: number
   maxPrice?: number
   sortBy?: 'price' | 'rating' | 'date'
