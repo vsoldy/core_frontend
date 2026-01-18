@@ -1,7 +1,7 @@
 <template>
   <header class="app-header" :class="{ 'is-hidden': isHidden }" ref="headerEl">
     <div class="container">
-      <div class="header-bar">
+      <div class="header-bar header-desktop">
         <div class="header-left">
           <RouterLink to="/" class="logo">
             SOLDY
@@ -65,8 +65,20 @@
     </RouterLink>
   </div>
         </div>
+      </div>
+
+      <div class="header-mobile">
+        <div class="mobile-top">
+          <RouterLink to="/" class="logo logo-mini">
+            S
+          </RouterLink>
+          <form class="header-search mobile-search" @submit.prevent="submitSearch">
+            <input v-model="searchValue" type="search" placeholder="Поиск товаров..." />
+            <button type="submit" aria-label="Найти">🔍</button>
+          </form>
         </div>
       </div>
+    </div>
 
       <div v-if="isCatalogOpen" class="catalog-backdrop" @click="closeCatalogMenu"></div>
       <aside :class="['catalog-drawer', { open: isCatalogOpen }]">
@@ -346,6 +358,60 @@ function handleDocumentClick(event: MouseEvent) {
   padding: 0.875rem 0;
   position: relative;
   flex-wrap: wrap;
+}
+
+.header-mobile {
+  display: none;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.75rem 0 0.65rem;
+}
+
+.mobile-top {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.logo-mini {
+  font-size: 1.1rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--border-radius-md);
+  background: var(--background-tertiary);
+  border: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.mobile-search {
+  margin: 0;
+  max-width: none;
+  flex: 1;
+}
+
+.mobile-bottom {
+  display: none;
+}
+
+.mobile-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.5rem 0.4rem;
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--border-color);
+  background: var(--background-tertiary);
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.mobile-action .cart-badge {
+  margin-left: 0.25rem;
 }
 
 .logo {
@@ -758,6 +824,18 @@ function handleDocumentClick(event: MouseEvent) {
 }
 
 @media (max-width: 900px) {
+  .app-header {
+    display: none;
+  }
+
+  .header-desktop {
+    display: none;
+  }
+
+  .header-mobile {
+    display: flex;
+  }
+
   .main-nav {
     position: absolute;
     top: 100%;
@@ -822,6 +900,10 @@ function handleDocumentClick(event: MouseEvent) {
 
   .nav-link {
     width: 100%;
+  }
+
+  .mobile-bottom {
+    display: none;
   }
 }
 

@@ -10,6 +10,46 @@
       <span v-if="hasActiveFilters" class="active-filters-badge"></span>
     </button>
 
+    <div class="mobile-toolbar">
+      <form class="mobile-search" @submit.prevent="submitMobileSearch">
+        <input
+          v-model="searchQuery"
+          type="search"
+          placeholder="Поиск"
+          @focus="openSearchOverlay"
+          @input="openSearchOverlay"
+        />
+        <button type="submit" aria-label="Найти">🔍</button>
+      </form>
+      <button class="mobile-icon-btn" type="button" @click="showSort = true" aria-label="Сортировка">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="M6 4v16M6 4l-2 2M6 4l2 2M12 20h6M12 14h4M12 8h2"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+      <button class="mobile-icon-btn" type="button" @click="showFilters = true" aria-label="Фильтры">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="M4 6h16M7 12h10M10 18h4"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          <circle cx="8" cy="6" r="2" fill="none" stroke="currentColor" stroke-width="2" />
+          <circle cx="14" cy="12" r="2" fill="none" stroke="currentColor" stroke-width="2" />
+          <circle cx="12" cy="18" r="2" fill="none" stroke="currentColor" stroke-width="2" />
+        </svg>
+      </button>
+    </div>
+
     <!-- Переключатель типов -->
     <div v-if="isBuyer" class="container catalog-heading">
       <div class="catalog-type-switcher">
@@ -83,15 +123,19 @@
       <div class="filters-modal-panel">
         <div class="filters-modal-header">
           <div class="filters-header-content">
+            <button class="filters-back-btn" type="button" @click="closeFilters" aria-label="Назад">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M15 5l-7 7 7 7"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
             <h2 class="filters-title">Фильтры</h2>
-            <div class="filters-header-actions">
-              <button @click="resetAllFilters" class="reset-all-btn">
-                Сбросить все
-              </button>
-              <button @click="closeFilters" class="close-filters-btn">
-                Закрыть
-              </button>
-            </div>
           </div>
         </div>
         
@@ -103,9 +147,67 @@
             @update:filters="handleFiltersUpdate"
           />
         </div>
+      </div>
+      <button class="filters-close-overlay" @click="closeFilters">Закрыть</button>
+    </div>
 
-        <div class="filters-modal-footer">
-          <button class="apply-filters-btn" @click="closeFilters">Показать товары</button>
+    <div v-if="showSort" class="sort-modal">
+      <div class="sort-panel">
+        <div class="sort-header">
+          <h2>Сортировка</h2>
+          <button class="close-sort-btn" @click="showSort = false">Закрыть</button>
+        </div>
+        <div class="sort-options">
+          <button
+            v-for="option in sortOptions"
+            :key="option.value"
+            :class="['sort-btn', { 'sort-btn-active': filters.sortBy === option.value }]"
+            @click="setSort(option.value)"
+          >
+            {{ option.label }}
+            <span v-if="filters.sortBy === option.value" class="sort-order">
+              {{ filters.sortOrder === 'desc' ? '↓' : '↑' }}
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="showSearchOverlay" class="search-overlay">
+      <div class="search-overlay-panel">
+        <div class="search-overlay-header">
+          <form class="search-overlay-input" @submit.prevent="submitMobileSearch">
+            <input v-model="searchQuery" type="search" placeholder="Поиск" />
+            <button type="submit" aria-label="Найти">🔍</button>
+          </form>
+          <button class="search-overlay-close" type="button" @click="closeSearchOverlay">Закрыть</button>
+        </div>
+        <div class="search-overlay-content">
+          <div class="search-categories">
+            <section v-for="category in searchCategories" :key="category.value" class="search-category">
+              <div class="search-category-head">
+                <h3>{{ category.label }}</h3>
+                <RouterLink
+                  class="search-category-link"
+                  :to="{ name: 'services', query: { category: category.value } }"
+                  @click="closeSearchOverlay"
+                >
+                  Все
+                </RouterLink>
+              </div>
+              <div class="search-subcategories">
+                <RouterLink
+                  v-for="sub in category.subcategories"
+                  :key="sub.value"
+                  class="search-subcategory"
+                  :to="{ name: 'services', query: { category: category.value, subcategory: sub.value } }"
+                  @click="closeSearchOverlay"
+                >
+                  {{ sub.label }}
+                </RouterLink>
+              </div>
+            </section>
+          </div>
         </div>
       </div>
     </div>
@@ -191,6 +293,8 @@ const { requests, isLoading: isLoadingRequests } = storeToRefs(requestsStore)
 const catalogType = ref<'services' | 'requests'>('services')
 // Показывать ли фильтры (модалка)
 const showFilters = ref(false)
+const showSort = ref(false)
+const showSearchOverlay = ref(false)
 const showRequestModal = ref(false)
 // Поисковый запрос
 const searchQuery = ref('')
@@ -217,12 +321,59 @@ onBeforeUnmount(() => {
   if (observer) {
     observer.disconnect()
   }
+  setBodyScrollLock(false)
+})
+
+const setBodyScrollLock = (locked: boolean) => {
+  document.body.style.overflow = locked ? 'hidden' : ''
+}
+
+watch([showFilters, showSearchOverlay, showSort], ([filtersOpen, searchOpen, sortOpen]) => {
+  setBodyScrollLock(filtersOpen || searchOpen || sortOpen)
 })
 
 watch(loadMoreRef, (el) => {
   if (!observer || !el) return
   observer.observe(el)
 })
+
+const searchCategories = [
+  {
+    label: 'Электроника',
+    value: 'electronics',
+    subcategories: [
+      { label: 'Смартфоны', value: 'smartphones' },
+      { label: 'Ноутбуки', value: 'laptops' },
+      { label: 'Аксессуары', value: 'accessories' }
+    ]
+  },
+  {
+    label: 'Одежда',
+    value: 'clothing',
+    subcategories: [
+      { label: 'Верхняя одежда', value: 'outerwear' },
+      { label: 'Обувь', value: 'shoes' },
+      { label: 'Аксессуары', value: 'fashion-accessories' }
+    ]
+  },
+  {
+    label: 'Книги',
+    value: 'books',
+    subcategories: [
+      { label: 'Бестселлеры', value: 'bestsellers' },
+      { label: 'Комиксы', value: 'comics' },
+      { label: 'Учебные', value: 'education' }
+    ]
+  },
+  {
+    label: 'Другое',
+    value: 'other',
+    subcategories: [
+      { label: 'Хобби', value: 'hobby' },
+      { label: 'Дом', value: 'home' }
+    ]
+  }
+]
 
 const setupInfiniteScroll = () => {
   if (observer) observer.disconnect()
@@ -325,6 +476,44 @@ const closeFilters = () => {
   showFilters.value = false
 }
 
+const openSearchOverlay = () => {
+  showSearchOverlay.value = true
+}
+
+const closeSearchOverlay = () => {
+  showSearchOverlay.value = false
+}
+
+const submitMobileSearch = () => {
+  const query = searchQuery.value.trim()
+  const baseQuery = route.name === 'services' ? { ...route.query } : {}
+  if ('search' in baseQuery) {
+    delete (baseQuery as Record<string, unknown>).search
+  }
+  router.push({
+    name: 'services',
+    query: query ? { ...baseQuery, search: query } : baseQuery
+  })
+}
+
+const sortOptions = [
+  { value: 'price' as const, label: 'Цена' },
+  { value: 'rating' as const, label: 'Рейтинг' },
+  { value: 'date' as const, label: 'Новизна' }
+]
+
+const setSort = (sortBy: 'price' | 'rating' | 'date') => {
+  const nextFilters = { ...filters.value }
+  if (nextFilters.sortBy === sortBy) {
+    nextFilters.sortOrder = nextFilters.sortOrder === 'desc' ? 'asc' : 'desc'
+  } else {
+    nextFilters.sortBy = sortBy
+    nextFilters.sortOrder = 'asc'
+  }
+  catalogStore.setFilters(nextFilters)
+  loadCatalogData()
+}
+
 // Обработчики действий
 const handleAddToCart = (service: Service) => {
   console.log('Service added to cart:', service)
@@ -370,6 +559,13 @@ watch(
   () => route.query,
   () => {
     applyQueryFilters()
+  }
+)
+
+watch(
+  () => route.fullPath,
+  () => {
+    showSearchOverlay.value = false
   }
 )
 
@@ -540,6 +736,245 @@ const filteredRequests = computed(() => {
   background: var(--background-primary);
 }
 
+.mobile-toolbar {
+  display: none;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  position: sticky;
+  top: 0;
+  z-index: 1200;
+  background: var(--background-primary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.mobile-search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: var(--border-radius-md);
+  background: var(--background-tertiary);
+  border: 1px solid var(--border-color);
+  flex: 1;
+}
+
+.mobile-search input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  padding: 0.35rem 0.4rem;
+  font-size: 0.9rem;
+}
+
+.mobile-search input:focus {
+  outline: none;
+}
+
+.mobile-search button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.mobile-icon-btn {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: var(--background-secondary);
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 0;
+}
+
+.mobile-icon-btn .icon {
+  width: 18px;
+  height: 18px;
+}
+
+.sort-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.35);
+  z-index: 1600;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.sort-panel {
+  width: 100%;
+  background: var(--background-secondary);
+  border-top-left-radius: var(--border-radius-lg);
+  border-top-right-radius: var(--border-radius-lg);
+  padding: 1rem;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.sort-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sort-header h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.close-sort-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.sort-options {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.sort-btn {
+  text-align: left;
+  padding: 0.65rem 0.75rem;
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--border-color);
+  background: var(--background-tertiary);
+  color: var(--text-primary);
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sort-btn-active {
+  border-color: var(--primary-color-light);
+  color: var(--primary-color-dark);
+}
+
+.sort-order {
+  opacity: 0.7;
+}
+
+.search-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--background-primary);
+  z-index: 2300;
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+.search-overlay-panel {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  height: 100%;
+}
+
+.search-overlay-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.search-overlay-input {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: var(--border-radius-md);
+  background: var(--background-tertiary);
+  border: 1px solid var(--border-color);
+}
+
+.search-overlay-input input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  padding: 0.35rem 0.4rem;
+  font-size: 0.9rem;
+}
+
+.search-overlay-input input:focus {
+  outline: none;
+}
+
+.search-overlay-input button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.search-overlay-close {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.search-overlay-content {
+  overflow-y: auto;
+  padding: 0.75rem 1rem 1rem;
+}
+
+.search-categories {
+  display: grid;
+  gap: 1rem;
+}
+
+.search-category {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.search-category-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.search-category-head h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.search-category-link {
+  color: var(--primary-color-dark);
+  font-weight: 600;
+  text-decoration: none;
+  font-size: 0.8rem;
+}
+
+.search-subcategories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.search-subcategory {
+  padding: 0.35rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  text-decoration: none;
+}
+
 /* Адаптивная сетка карточек */
 .services-grid {
   display: grid;
@@ -555,6 +990,32 @@ const filteredRequests = computed(() => {
 }
 
 @media (max-width: 900px) {
+  .filters-modal {
+    place-items: stretch;
+    padding: 0;
+  }
+
+  .filters-modal-panel {
+    width: 100%;
+    height: 100vh;
+    max-height: none;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+
+  .filters-modal-content {
+    padding: 0.75rem 1rem 1rem;
+  }
+
+  .mobile-toolbar {
+    display: flex;
+  }
+
+  .filters-fab {
+    display: none;
+  }
+
   .services-grid {
     gap: 1rem;
   }
@@ -729,104 +1190,88 @@ const filteredRequests = computed(() => {
   background: rgba(10, 12, 20, 0.6);
   z-index: 2400;
   display: grid;
-  place-items: center;
-  padding: 1.5rem;
+  place-items: stretch;
+  padding: 0;
 }
 
 .filters-modal-panel {
-  width: min(920px, 100%);
-  height: min(92vh, 820px);
-  background: var(--background-secondary);
-  border-radius: var(--border-radius-xl);
-  border: 1px solid var(--border-color);
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  background: var(--background-primary);
+  border-radius: 0;
+  border: none;
   display: grid;
   grid-template-rows: auto 1fr auto;
-  box-shadow: var(--shadow-lg);
+  box-shadow: none;
   overflow: hidden;
 }
 
 .filters-modal-header {
-  padding: 1.2rem 1.5rem;
+  padding: 0.75rem 1rem;
   border-bottom: 1px solid var(--border-color);
+  background: var(--background-primary);
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
 .filters-header-content {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
 }
 
 .filters-title {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1rem;
   color: var(--text-primary);
+  white-space: nowrap;
 }
 
-.filters-header-actions {
-  display: flex;
-  gap: 0.75rem;
-  align-items: center;
-}
-
-.reset-all-btn {
-  padding: 0.625rem 1.25rem;
-  background: none;
-  border: 2px solid var(--border-color);
-  color: var(--text-secondary);
-  border-radius: var(--border-radius-md);
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.reset-all-btn:hover {
-  border-color: var(--accent-red);
-  color: var(--accent-red);
-}
-
-.close-filters-btn {
-  padding: 0.625rem 1.25rem;
+.filters-back-btn {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  border: none;
   background: transparent;
-  border: 1px solid var(--border-color);
   color: var(--text-primary);
-  border-radius: var(--border-radius-md);
-  font-size: 0.875rem;
-  font-weight: 600;
   cursor: pointer;
-  transition: background-color var(--transition-fast);
 }
 
-.close-filters-btn:hover {
-  background: var(--background-tertiary);
+.filters-back-btn .icon {
+  width: 18px;
+  height: 18px;
 }
 
 .filters-modal-content {
   overflow-y: auto;
-  padding: 1.5rem;
+  padding: 0.75rem 1rem 5rem;
 }
 
-.filters-modal-footer {
-  padding: 1rem 1.5rem;
-  border-top: 1px solid var(--border-color);
-  display: flex;
-  justify-content: flex-end;
-}
-
-.apply-filters-btn {
-  background: var(--primary-color);
-  color: white;
-  border: 1px solid var(--primary-color);
-  padding: 0.7rem 1.25rem;
+.filters-close-overlay {
+  position: fixed;
+  left: 1rem;
+  right: 1rem;
+  bottom: 0.8rem;
+  padding: 0.7rem 1rem;
   border-radius: var(--border-radius-md);
+  background: color-mix(in srgb, var(--background-primary) 92%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border-color) 55%, transparent);
+  color: var(--text-primary);
   font-weight: 700;
   cursor: pointer;
+  z-index: 3;
+  backdrop-filter: blur(8px);
 }
 
-.apply-filters-btn:hover {
-  background: var(--primary-color-dark);
+.filters-close-overlay:hover {
+  background: var(--background-primary);
 }
 
 /* Адаптация для мобильных */
@@ -893,16 +1338,6 @@ const filteredRequests = computed(() => {
 @media (max-width: 480px) {
   .catalog-title {
     font-size: 1.5rem;
-  }
-  
-  .filters-header-content {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 1rem;
-  }
-  
-  .filters-header-actions {
-    justify-content: space-between;
   }
 }
 </style>

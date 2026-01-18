@@ -1,6 +1,7 @@
 <template>
   <div class="app-wrapper" :class="{ 'dark-theme': isDarkTheme }">
     <AppHeader />
+    <MobileBottomBar />
 
     <main
       class="app-main"
@@ -27,6 +28,7 @@ import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRoute } from 'vue-router'
 import AppHeader from '@/components/layout/AppHeader.vue'
+import MobileBottomBar from '@/components/layout/MobileBottomBar.vue'
 import AppFooter from '@/components/layout/AppFooter.vue'
 import NotificationCenter from '@/widgets/NotificationCenter.vue'
 import { useUiStore } from './stores'
@@ -50,15 +52,15 @@ const showFooter = computed(() => !isDashboardRoute.value)
 
 .app-main {
   flex: 1;
-  padding: 0 0 2rem;
+  padding: 0;
 }
 
 .app-main--offset {
-  padding-top: calc(var(--header-offset) + 0.75rem);
+  padding-top: 0;
 }
 
 .app-main--dashboard {
-  padding-top: calc(var(--header-offset) + 0.5rem);
+  padding: 0;
   min-height: 100vh;
 }
 
@@ -67,7 +69,7 @@ const showFooter = computed(() => !isDashboardRoute.value)
     height: auto;
     min-height: 100vh;
     overflow: visible;
-    padding-top: 60px;
+    padding: 0;
   }
 }
 </style>

@@ -26,6 +26,14 @@ const routes: Array<RouteRecordRaw> = [
     }
   },
   {
+    path: '/catalog',
+    name: 'catalog-mobile',
+    component: () => import('../pages/MobileCatalogPage.vue'),
+    meta: {
+      title: 'Каталог'
+    }
+  },
+  {
     path: '/pricing',
     name: 'pricing',
     component: () => import('../pages/PricingPage.vue'),
@@ -265,6 +273,18 @@ const routes: Array<RouteRecordRaw> = [
         name: 'dashboard-declarator',
         component: () => import('../pages/dashboard/DashboardDeclaratorPage.vue'),
         meta: { title: 'Декларатор' }
+      },
+      {
+        path: 'notifications',
+        name: 'dashboard-notifications',
+        component: () => import('../pages/dashboard/DashboardNotificationsPage.vue'),
+        meta: { title: 'Уведомления' }
+      },
+      {
+        path: 'verification',
+        name: 'dashboard-verification',
+        component: () => import('../pages/dashboard/DashboardVerificationPage.vue'),
+        meta: { title: 'Верификация' }
       }
     ]
   },

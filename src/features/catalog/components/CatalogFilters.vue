@@ -1,7 +1,6 @@
 <template>
   <div class="catalog-filters">
     <div class="filters-header">
-      <h3 class="filters-title">Фильтры</h3>
       <button v-if="hasActiveFilters" @click="resetFilters" class="reset-btn">
         Сбросить все
       </button>
@@ -58,24 +57,6 @@
       </div>
     </div>
     
-    <!-- Сортировка -->
-    <div class="filter-group">
-      <label class="filter-label">Сортировка</label>
-      <div class="sort-options">
-        <button
-          v-for="option in sortOptions"
-          :key="option.value"
-          :class="['sort-btn', { 'sort-btn-active': localFilters.sortBy === option.value }]"
-          @click="setSort(option.value)"
-        >
-          {{ option.label }}
-          <span v-if="localFilters.sortBy === option.value" class="sort-order">
-            {{ localFilters.sortOrder === 'desc' ? '↓' : '↑' }}
-          </span>
-        </button>
-      </div>
-    </div>
-    
     <!-- Активные фильтры -->
     <div v-if="hasActiveFilters" class="active-filters">
       <div class="active-filters-title">Активные фильтры:</div>
@@ -128,20 +109,14 @@ if (props.filters.category) {
   }
 }
 
-// Опции сортировки
-const sortOptions = [
-  { value: 'price' as const, label: 'По цене' },
-  { value: 'rating' as const, label: 'По рейтингу' },
-  { value: 'date' as const, label: 'По дате' }
-]
 
 // Названия категорий
 const getCategoryName = (category: string) => {
   const names: Record<string, string> = {
-    'electronics': 'Электроника',
-    'clothing': 'Одежда',
-    'books': 'Книги',
-    'other': 'Другое'
+    electronics: 'Электроника',
+    clothing: 'Одежда',
+    books: 'Книги',
+    other: 'Другое'
   }
   return names[category] || category
 }
@@ -193,16 +168,6 @@ const activeFiltersList = computed(() => {
     })
   }
   
-  // Сортировка
-  if (localFilters.value.sortBy) {
-    const order = localFilters.value.sortOrder === 'desc' ? ' (убыв.)' : ' (возр.)'
-    const sortLabel = sortOptions.find(opt => opt.value === localFilters.value.sortBy)?.label || ''
-    filters.push({ 
-      key: 'sortBy', 
-      label: `Сортировка: ${sortLabel}${order}` 
-    })
-  }
-  
   return filters
 })
 
@@ -225,18 +190,6 @@ const updateFilters = () => {
   updateFiltersWithCategories()
 }
 
-// Установка сортировки
-const setSort = (sortBy: 'price' | 'rating' | 'date') => {
-  if (localFilters.value.sortBy === sortBy) {
-    // Переключение порядка
-    localFilters.value.sortOrder = localFilters.value.sortOrder === 'desc' ? 'asc' : 'desc'
-  } else {
-    // Новая сортировка
-    localFilters.value.sortBy = sortBy
-    localFilters.value.sortOrder = 'asc'
-  }
-  updateFilters()
-}
 
 // Удаление фильтра
 const removeFilter = (key: string) => {
@@ -279,24 +232,16 @@ watch(() => props.filters, (newFilters) => {
 
 <style scoped>
 .catalog-filters {
-  background: var(--background-secondary);
-  border-radius: var(--border-radius-lg);
-  padding: 1.5rem;
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
 }
 
 .filters-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.filters-title {
-  margin: 0;
-  font-size: 1.25rem;
-  color: var(--text-primary);
+  margin-bottom: 0.75rem;
 }
 
 .reset-btn {
@@ -313,14 +258,14 @@ watch(() => props.filters, (newFilters) => {
 }
 
 .filter-group {
-  margin-bottom: 2rem;
+  margin-bottom: 1.25rem;
 }
 
 .filter-label {
   display: block;
-  margin-bottom: 0.75rem;
-  color: var(--text-primary);
-  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--text-secondary);
+  font-weight: 500;
   font-size: 0.875rem;
 }
 
@@ -335,22 +280,20 @@ watch(() => props.filters, (newFilters) => {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.75rem 1rem;
+  padding: 0.6rem 0.8rem;
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-md);
-  background: var(--background-primary);
+  background: transparent;
   cursor: pointer;
   transition: all var(--transition-fast);
 }
 
 .category-option:hover {
   border-color: var(--primary-color-light);
-  background: var(--background-tertiary);
 }
 
 .category-selected {
   border-color: var(--primary-color);
-  background: color-mix(in srgb, var(--primary-color) 15%, transparent);
 }
 
 .category-checkbox {
@@ -368,15 +311,15 @@ watch(() => props.filters, (newFilters) => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.35rem;
 }
 
 .price-input {
   flex: 1;
-  padding: 0.75rem 0.5rem;
+  padding: 0.6rem 0.5rem;
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-md);
-  background: var(--background-primary);
+  background: transparent;
   color: var(--text-primary);
   text-align: center;
   font-size: 0.875rem;
@@ -398,49 +341,10 @@ watch(() => props.filters, (newFilters) => {
   font-size: 0.75rem;
 }
 
-/* Сортировка */
-.sort-options {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.sort-btn {
-  padding: 0.75rem 1rem;
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-md);
-  background: var(--background-primary);
-  color: var(--text-secondary);
-  text-align: left;
-  cursor: pointer;
-  font-size: 0.875rem;
-  transition: all var(--transition-fast);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.sort-btn:hover {
-  border-color: var(--primary-color-light);
-  color: var(--text-primary);
-}
-
-.sort-btn-active {
-  border-color: var(--primary-color);
-  background: color-mix(in srgb, var(--primary-color) 14%, var(--background-secondary));
-  color: var(--primary-color);
-  font-weight: 500;
-}
-
-.sort-order {
-  font-size: 1rem;
-  font-weight: bold;
-}
-
 /* Активные фильтры */
 .active-filters {
-  margin-top: 2rem;
-  padding-top: 1rem;
+  margin-top: 1.5rem;
+  padding-top: 0.75rem;
   border-top: 1px solid var(--border-color);
 }
 
